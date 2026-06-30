@@ -65,6 +65,7 @@ export default function ApiMatchManager({ onMatchAdded }: { onMatchAdded: () => 
   }
 
   function matchCountryFlag(name: string) {
+    if (!name) return undefined;
     const c = getAllCountries().find(x => x.name.toLowerCase() === name.toLowerCase());
     return c ? c.flag : "🏳️";
   }

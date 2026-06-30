@@ -338,7 +338,7 @@ export default function DesktopDashboard() {
     tick(); cdRef.current = setInterval(tick, 1000);
     const [pr, ur] = await Promise.all([fetch(`/api/matches/${m.id}/predictions`), fetch(`/api/predictions/${m.id}`)]);
     if (pr.ok) { const d = await pr.json(); setSelectedPredictions(d.predictions || []); }
-    if (ur.ok) { const d = await ur.json(); if (d.prediction) { setUserPrediction(d.prediction); setPredScore1(String(d.prediction.team1_score)); setPredScore2(String(d.prediction.team2_score)); } else { setUserPrediction(null); setPredScore1("0"); setPredScore2("0"); } }
+    if (ur.ok) { const d = await ur.json(); if (d && d.prediction) { setUserPrediction(d.prediction); setPredScore1(String(d.prediction.team1_score)); setPredScore2(String(d.prediction.team2_score)); } else { setUserPrediction(null); setPredScore1("0"); setPredScore2("0"); } }
   }
 
   /* ── Prediction submit ── */

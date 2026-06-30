@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Outfit, Inter } from "next/font/google";
 import NavigationBar from "@/components/NavigationBar";
+import InstallBanner from "@/components/InstallBanner";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -20,10 +21,12 @@ export const metadata: Metadata = {
   description: "World Cup prediction tracker",
   manifest: "/manifest.json",
   appleWebApp: {
-    capable: true,
     statusBarStyle: "black-translucent",
     title: "NBR Predictions",
   },
+  other: {
+    "mobile-web-app-capable": "yes"
+  }
 };
 
 export const viewport: Viewport = {
@@ -49,6 +52,7 @@ export default function RootLayout({
 
         <main className="pb-32">{children}</main>
         <NavigationBar />
+        <InstallBanner />
 
         {/* Register service worker for PWA support */}
         <script
