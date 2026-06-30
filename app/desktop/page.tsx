@@ -58,8 +58,8 @@ const I = {
   Star:      () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
   Flag:      () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg>,
   Smartphone:() => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>,
-  Globe:     () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>,
-  Search:    () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/></svg>,
+  Globe:     ({className}:any) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className || "w-full h-full"}><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>,
+  Search:    ({className}:any) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className || "w-full h-full"}><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/></svg>,
   Eye:       () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>,
   EyeOff:    () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>,
 };
@@ -182,6 +182,7 @@ export default function DesktopDashboard() {
   const [securityLogs, setSecurityLogs] = useState<any[]>([]);
   const [securityLogSearch, setSecurityLogSearch] = useState("");
   const [hideAppOpens, setHideAppOpens] = useState(true);
+  const [bannedIps, setBannedIps] = useState<any[]>([]);
 
   /* Admin misc */
   const [annInput, setAnnInput] = useState(""); const [annSaving, setAnnSaving] = useState(false);
@@ -504,15 +505,12 @@ export default function DesktopDashboard() {
     await loadAll();
   }
   async function banIp(ip: string) {
-    const reason = prompt(`Ban IP ${ip}? Enter a reason (optional):`);
-    if (reason === null) return; // cancelled
-    const res = await fetch(`/api/admin/ips/ban`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ip, reason })
-    });
-    if (res.ok) { alert("IP Banned!"); loadSecurityLogs(); }
-    else { const d = await res.json(); alert(d.error || "Failed to ban IP"); }
+    await fetch(`/api/admin/ips/ban`, { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ ip, reason: "Banned from Logbook" }) });
+    loadSecurityLogs();
+  }
+  async function unbanIp(ip: string) {
+    await fetch(`/api/admin/ips/ban`, { method: "DELETE", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ ip }) });
+    loadSecurityLogs();
   }
   
   /* ── Admin: Security Logs ── */
@@ -522,6 +520,8 @@ export default function DesktopDashboard() {
   async function loadSecurityLogs() {
     const res = await fetch("/api/admin/audit");
     if (res.ok) setSecurityLogs(await res.json());
+    const ipRes = await fetch("/api/admin/ips/ban");
+    if (ipRes.ok) setBannedIps(await ipRes.json());
   }
 
   /* ── Admin: Matches ── */
@@ -1172,6 +1172,24 @@ export default function DesktopDashboard() {
                         </label>
                       </div>
                     </div>
+
+                    {bannedIps.length > 0 && (
+                      <div className="bg-rose-500/10 border border-rose-500/20 rounded-2xl p-4 mb-4">
+                        <h4 className="text-xs font-black text-rose-500 uppercase tracking-widest mb-3">Active IP Bans</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {bannedIps.map(b => (
+                            <div key={b.id} className="flex items-center gap-2 bg-[#0c0d14] border border-rose-500/20 px-3 py-1.5 rounded-lg">
+                              <span className="text-xs font-mono text-gray-300">{b.ip}</span>
+                              <span className="text-[10px] text-gray-500 border-l border-white/10 pl-2">{b.reason}</span>
+                              <button onClick={() => unbanIp(b.ip)} className="ml-2 text-rose-500 hover:text-white transition-colors">
+                                <span className="w-3.5 h-3.5 block"><I.X /></span>
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="bg-[#0c0d14]/60 border border-white/[0.05] rounded-2xl overflow-hidden">
                       <div className="max-h-[500px] overflow-y-auto">
                         {(() => {
