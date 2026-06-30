@@ -4,18 +4,27 @@ import { getSession } from "@/lib/auth";
 import db from "@/lib/db";
 import path from "path";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Not logged in" }, { status: 401 });
   }
   try {
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0] || request.headers.get("x-real-ip") || "Unknown IP";
+    
     const user = db
       .prepare("SELECT id, name, username, pfp_path, is_admin FROM users WHERE id = ?")
-      .get(session.userId);
+      .get(session.userId) as any;
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
+
+    // Log the app open event
+    db.prepare(`
+      INSERT INTO audit_logs (user_id, action, details, ip_address) 
+      VALUES (?, ?, ?, ?)
+    `).run(user.id, "Opened App", `${user.username} opened the app while already logged in.`, ip);
+
     return NextResponse.json(user);
   } catch (error) {
     return NextResponse.json({ error: "Database error" }, { status: 500 });
