@@ -51,6 +51,11 @@ export default function LoginPage() {
     // Run session check on load
     (async () => {
       try {
+        if (!sessionStorage.getItem("guest_pinged")) {
+          fetch("/api/ping", { method: "POST" }).catch(() => {});
+          sessionStorage.setItem("guest_pinged", "true");
+        }
+        
         const r = await fetch("/api/me");
         if (r.ok) {
           const user = await r.json();

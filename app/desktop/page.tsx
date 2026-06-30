@@ -182,6 +182,7 @@ export default function DesktopDashboard() {
   const [securityLogs, setSecurityLogs] = useState<any[]>([]);
   const [securityLogSearch, setSecurityLogSearch] = useState("");
   const [hideAppOpens, setHideAppOpens] = useState(true);
+  const [hideGuestVisits, setHideGuestVisits] = useState(true);
   const [bannedIps, setBannedIps] = useState<any[]>([]);
 
   /* Admin misc */
@@ -1164,11 +1165,20 @@ export default function DesktopDashboard() {
                         <label className="flex items-center gap-2 cursor-pointer select-none border border-white/[0.05] bg-[#0c0d14]/60 rounded-xl px-3 py-2">
                           <input 
                             type="checkbox" 
+                            checked={hideGuestVisits}
+                            onChange={(e) => setHideGuestVisits(e.target.checked)}
+                            className="accent-indigo-500 w-3 h-3"
+                          />
+                          <span className="text-xs font-bold text-gray-400">Hide Guests</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer select-none border border-white/[0.05] bg-[#0c0d14]/60 rounded-xl px-3 py-2">
+                          <input 
+                            type="checkbox" 
                             checked={hideAppOpens}
                             onChange={(e) => setHideAppOpens(e.target.checked)}
                             className="accent-red-500 w-3 h-3"
                           />
-                          <span className="text-xs font-bold text-gray-400">Hide 'Opened App'</span>
+                          <span className="text-xs font-bold text-gray-400">Hide Opens</span>
                         </label>
                       </div>
                     </div>
@@ -1195,6 +1205,7 @@ export default function DesktopDashboard() {
                         {(() => {
                           const filtered = securityLogs.filter(l => {
                             if (hideAppOpens && l.action === "Opened App") return false;
+                            if (hideGuestVisits && l.action === "GUEST_VISIT") return false;
                             if (!securityLogSearch) return true;
                             const q = securityLogSearch.toLowerCase();
                             return (
