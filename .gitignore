@@ -1,0 +1,11 @@
+node_modules/
+football.db
+football.db-shm
+football.db-wal
+.env*.local
+.DS_Store
+next-env.d.ts
+.next/
+/uploads/*
+!/uploads/.gitkeep
+.aider*
