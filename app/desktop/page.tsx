@@ -59,6 +59,7 @@ const I = {
   Flag:      () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg>,
   Smartphone:() => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>,
   Globe:     () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>,
+  Search:    () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/></svg>,
   Eye:       () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>,
   EyeOff:    () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>,
 };
@@ -179,6 +180,8 @@ export default function DesktopDashboard() {
   
   /* Admin Security */
   const [securityLogs, setSecurityLogs] = useState<any[]>([]);
+  const [securityLogSearch, setSecurityLogSearch] = useState("");
+  const [hideAppOpens, setHideAppOpens] = useState(true);
 
   /* Admin misc */
   const [annInput, setAnnInput] = useState(""); const [annSaving, setAnnSaving] = useState(false);
@@ -1135,23 +1138,59 @@ export default function DesktopDashboard() {
                 {/* ─ A4: SECURITY ─ */}
                 {adminTab === "security" && (
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-black text-sm text-white font-outfit">Security Logbook</h3>
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                          <span className="text-[8px] font-black uppercase tracking-widest text-emerald-400">Live</span>
+                    <div className="flex flex-col gap-3 mb-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-black text-sm text-white font-outfit">Security Logbook</h3>
+                          <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span className="text-[8px] font-black uppercase tracking-widest text-emerald-400">Live</span>
+                          </div>
                         </div>
+                        <button onClick={loadSecurityLogs} className="text-[10px] font-bold text-red-400 hover:text-red-300 transition-colors uppercase tracking-widest">Force Refresh</button>
                       </div>
-                      <button onClick={loadSecurityLogs} className="text-[10px] font-bold text-red-400 hover:text-red-300 transition-colors uppercase tracking-widest">Force Refresh</button>
+                      
+                      <div className="flex items-center gap-3">
+                        <div className="relative flex-grow">
+                          <I.Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+                          <input 
+                            type="text" 
+                            placeholder="Filter by user, IP, or action..." 
+                            value={securityLogSearch}
+                            onChange={(e) => setSecurityLogSearch(e.target.value)}
+                            className="w-full bg-[#0c0d14]/60 border border-white/[0.05] rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-red-500/30 transition-colors"
+                          />
+                        </div>
+                        <label className="flex items-center gap-2 cursor-pointer select-none border border-white/[0.05] bg-[#0c0d14]/60 rounded-xl px-3 py-2">
+                          <input 
+                            type="checkbox" 
+                            checked={hideAppOpens}
+                            onChange={(e) => setHideAppOpens(e.target.checked)}
+                            className="accent-red-500 w-3 h-3"
+                          />
+                          <span className="text-xs font-bold text-gray-400">Hide 'Opened App'</span>
+                        </label>
+                      </div>
                     </div>
                     <div className="bg-[#0c0d14]/60 border border-white/[0.05] rounded-2xl overflow-hidden">
                       <div className="max-h-[500px] overflow-y-auto">
-                        {securityLogs.length === 0 ? (
-                          <p className="text-xs text-gray-600 p-8 text-center">No security logs recorded yet.</p>
-                        ) : (
-                          <div className="divide-y divide-white/[0.03]">
-                            {securityLogs.map((log) => (
+                        {(() => {
+                          const filtered = securityLogs.filter(l => {
+                            if (hideAppOpens && l.action === "Opened App") return false;
+                            if (!securityLogSearch) return true;
+                            const q = securityLogSearch.toLowerCase();
+                            return (
+                              (l.username || "").toLowerCase().includes(q) ||
+                              (l.ip_address || "").toLowerCase().includes(q) ||
+                              (l.action || "").toLowerCase().includes(q) ||
+                              (l.details || "").toLowerCase().includes(q)
+                            );
+                          });
+                          return filtered.length === 0 ? (
+                            <p className="text-xs text-gray-600 p-8 text-center">No security logs match your filter.</p>
+                          ) : (
+                            <div className="divide-y divide-white/[0.03]">
+                              {filtered.map((log) => (
                               <div key={log.id} className="p-3.5 flex gap-4 items-start hover:bg-white/[0.02] transition-colors">
                                 <div className="shrink-0 mt-0.5">
                                   {log.action.includes("FAIL") || log.action.includes("BLOCK") || log.action.includes("BANNED") ? (
@@ -1185,7 +1224,7 @@ export default function DesktopDashboard() {
                               </div>
                             ))}
                           </div>
-                        )}
+                        );})()}
                       </div>
                     </div>
                   </div>
