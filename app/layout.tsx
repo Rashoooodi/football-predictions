@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Outfit, Inter } from "next/font/google";
 import NavigationBar from "@/components/NavigationBar";
-import InstallBanner from "@/components/InstallBanner";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -58,7 +57,6 @@ export default function RootLayout({
           </footer>
         </main>
         <NavigationBar />
-        <InstallBanner />
 
         {/* Register service worker for PWA support */}
         <script
