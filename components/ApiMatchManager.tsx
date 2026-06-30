@@ -37,7 +37,7 @@ export default function ApiMatchManager({ onMatchAdded }: { onMatchAdded: () => 
     try {
       const [datePart, timePart] = local_date.split(" ");
       const [m, d, y] = datePart.split("/");
-      return new Date(`${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}T${timePart}:00-05:00`);
+      return new Date(`${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}T${timePart}:00-04:00`);
     } catch {
       return null;
     }
