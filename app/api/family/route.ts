@@ -9,7 +9,7 @@ export async function GET() {
 
   const members = db
     .prepare(
-      "SELECT u.id, u.name, u.username, u.pfp_path, u.is_admin, u.is_hidden, " +
+      "SELECT u.id, u.name, u.username, u.pfp_path, u.is_admin, u.is_hidden, u.locked_until, u.failed_attempts, " +
         "COUNT(p.id) as total_predictions, " +
         "SUM(CASE WHEN m.is_finished = 1 " +
         "AND p.team1_score = m.team1_score " +

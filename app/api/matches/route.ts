@@ -63,5 +63,10 @@ export async function POST(request: NextRequest) {
       is_finished
     );
 
+  const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
+  db.prepare("INSERT INTO audit_logs (user_id, action, ip_address, details) VALUES (?, 'MATCH_CREATED', ?, ?)").run(
+    session.userId, ip, `Admin scheduled match ${team1.name} vs ${team2.name}`
+  );
+
   return NextResponse.json({ id: result.lastInsertRowid });
 }

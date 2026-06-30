@@ -14,7 +14,7 @@ type Match = {
 };
 type User = {
   id: number; name: string; username: string; pfp_path: string | null;
-  is_admin: number; is_hidden: number; points?: number; correct_count?: number; current_streak?: number;
+  is_admin: number; is_hidden: number; is_banned?: number; points?: number; correct_count?: number; current_streak?: number;
 };
 type Prediction = {
   id: number; user_id: number; name: string; pfp_path: string | null;
@@ -466,6 +466,23 @@ export default function DesktopDashboard() {
     });
     if (!res.ok) { const d = await res.json(); alert(d.error || "Failed to update ban status"); }
     await loadAll();
+  }
+  async function unlockUser(u: User) {
+    if (!confirm(`Unlock account for ${u.name}?`)) return;
+    const res = await fetch(`/api/admin/users/${u.id}/unlock`, { method: "PUT" });
+    if (!res.ok) { const d = await res.json(); alert(d.error || "Failed to unlock"); }
+    await loadAll();
+  }
+  async function banIp(ip: string) {
+    const reason = prompt(`Ban IP ${ip}? Enter a reason (optional):`);
+    if (reason === null) return; // cancelled
+    const res = await fetch(`/api/admin/ips/ban`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ip, reason })
+    });
+    if (res.ok) { alert("IP Banned!"); loadSecurityLogs(); }
+    else { const d = await res.json(); alert(d.error || "Failed to ban IP"); }
   }
   
   /* ── Admin: Security Logs ── */
@@ -1000,10 +1017,11 @@ export default function DesktopDashboard() {
                       <div className="space-y-2 max-h-[440px] overflow-y-auto pr-1">
                         {familyMembers.map(u => (
                           <div key={u.id} className="card py-3 px-4 flex items-center justify-between gap-3 border-white/[0.04] hover:border-white/[0.08] transition-colors">
-                            <div className="flex items-center gap-3 min-w-0"><Avatar src={u.pfp_path} name={u.name} size="sm" /><div className="min-w-0"><div className="flex items-center gap-1.5 flex-wrap"><span className="text-xs font-bold text-white truncate">{u.name}</span>{u.is_admin===1&&<Badge color="amber">Admin</Badge>}{u.is_banned===1&&<Badge color="rose">Banned</Badge>}</div><span className="text-[10px] text-gray-600">@{u.username}</span></div></div>
+                            <div className="flex items-center gap-3 min-w-0"><Avatar src={u.pfp_path} name={u.name} size="sm" /><div className="min-w-0"><div className="flex items-center gap-1.5 flex-wrap"><span className="text-xs font-bold text-white truncate">{u.name}</span>{u.is_admin===1&&<Badge color="amber">Admin</Badge>}{u.is_banned===1&&<Badge color="rose">Banned</Badge>}{u.locked_until && new Date(u.locked_until + "Z") > new Date() && <Badge color="orange">Locked ({u.failed_attempts} fails)</Badge>}</div><span className="text-[10px] text-gray-600">@{u.username}</span></div></div>
                             <div className="flex gap-1.5 shrink-0">
+                              {u.locked_until && new Date(u.locked_until + "Z") > new Date() && <button onClick={()=>unlockUser(u)} className="flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400 hover:bg-orange-500/20 transition-all"><span className="w-3 h-3"><I.Unlock /></span> Unlock</button>}
                               <button onClick={()=>openEditUser(u)} className="flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold rounded-lg bg-white/[0.03] border border-white/[0.08] text-gray-300 hover:text-white hover:bg-white/[0.07] transition-all"><span className="w-3 h-3"><I.Edit /></span> Edit</button>
-                              {u.is_admin!==1&&<button onClick={()=>toggleBanUser(u)} className={`flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold rounded-lg border transition-all ${u.is_banned===1?"bg-emerald-500/10 border-emerald-500/20 text-emerald-400":"bg-orange-500/10 border-orange-500/20 text-orange-400"}`}><span className="w-3 h-3">{u.is_banned===1?<I.Check/>:<I.X/>}</span> {u.is_banned===1?"Unban":"Ban"}</button>}
+                              {u.is_admin!==1&&<button onClick={()=>toggleBanUser(u)} className={`flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold rounded-lg border transition-all ${u.is_banned===1?"bg-emerald-500/10 border-emerald-500/20 text-emerald-400":"bg-rose-500/10 border-rose-500/20 text-rose-400"}`}><span className="w-3 h-3">{u.is_banned===1?<I.Check/>:<I.X/>}</span> {u.is_banned===1?"Unban":"Ban"}</button>}
                               {u.is_admin!==1&&<button onClick={()=>deleteUser(u.id)} className="flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold rounded-lg bg-rose-500/[0.04] border border-rose-500/10 text-rose-500 hover:bg-rose-500/10 transition-all"><span className="w-3 h-3"><I.Trash /></span> Del</button>}
                             </div>
                           </div>
@@ -1114,8 +1132,11 @@ export default function DesktopDashboard() {
                                 <div className="min-w-0 flex-1">
                                   <div className="flex items-center justify-between flex-wrap gap-2 mb-1">
                                     <div className="flex items-center gap-2">
-                                      <Badge color={log.action.includes("FAIL") || log.action.includes("BLOCK") || log.action.includes("BANNED") ? "rose" : log.action.includes("RATE_LIMIT") ? "amber" : "emerald"}>{log.action}</Badge>
-                                      <span className="text-[10px] font-mono text-gray-500">IP: {log.ip_address}</span>
+                                      <Badge color={log.action.includes("FAIL") || log.action.includes("BLOCK") || log.action.includes("BANNED") ? "rose" : log.action.includes("RATE_LIMIT") ? "amber" : log.action.includes("CREATED") || log.action.includes("SUBMIT") ? "indigo" : "emerald"}>{log.action}</Badge>
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-[10px] font-mono text-gray-500">IP: {log.ip_address}</span>
+                                        <button onClick={()=>banIp(log.ip_address)} className="text-[8px] font-bold text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 px-1.5 py-0.5 rounded border border-rose-500/20 transition-colors uppercase tracking-wider">Ban IP</button>
+                                      </div>
                                     </div>
                                     <span className="text-[10px] font-mono text-gray-500">{new Date(log.created_at).toLocaleString()}</span>
                                   </div>

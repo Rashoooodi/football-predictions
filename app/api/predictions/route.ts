@@ -35,15 +35,24 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Scores must be non-negative" }, { status: 400 });
   }
 
-  // Removed duplicate exact-score blocker to allow multiple users to predict the same score
-  db.prepare(
-    "INSERT INTO predictions (user_id, match_id, team1_score, team2_score, submitted_at) " +
-      "VALUES (?, ?, ?, ?, datetime('now')) " +
-      "ON CONFLICT(user_id, match_id) DO UPDATE SET " +
-      "team1_score = excluded.team1_score, " +
-      "team2_score = excluded.team2_score, " +
-      "submitted_at = datetime('now')"
-  ).run(session.userId, matchId, team1Score, team2Score);
+  const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
+  const existing = db.prepare("SELECT * FROM predictions WHERE user_id = ? AND match_id = ?").get(session.userId, matchId) as any;
+
+  if (existing) {
+    db.prepare("UPDATE predictions SET team1_score = ?, team2_score = ?, submitted_at = datetime('now') WHERE id = ?")
+      .run(team1Score, team2Score, existing.id);
+      
+    db.prepare("INSERT INTO audit_logs (user_id, action, ip_address, details) VALUES (?, 'PREDICTION_UPDATED', ?, ?)").run(
+      session.userId, ip, `Updated prediction for match ${matchId} to ${team1Score}-${team2Score}`
+    );
+  } else {
+    db.prepare("INSERT INTO predictions (user_id, match_id, team1_score, team2_score, submitted_at) VALUES (?, ?, ?, ?, datetime('now'))")
+      .run(session.userId, matchId, team1Score, team2Score);
+      
+    db.prepare("INSERT INTO audit_logs (user_id, action, ip_address, details) VALUES (?, 'PREDICTION_SUBMITTED', ?, ?)").run(
+      session.userId, ip, `Submitted prediction for match ${matchId}: ${team1Score}-${team2Score}`
+    );
+  }
 
   return NextResponse.json({ success: true });
 }
