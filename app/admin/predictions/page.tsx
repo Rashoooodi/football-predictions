@@ -16,7 +16,7 @@ type Match = {
 type User = {
   id: number;
   name: string;
-  phone: string;
+  username: string;
 };
 
 type Prediction = {
@@ -144,7 +144,7 @@ export default function AdminPredictionsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-emerald-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-500"></div>
       </div>
     );
   }
@@ -155,7 +155,7 @@ export default function AdminPredictionsPage() {
     <div className="max-w-4xl mx-auto p-4 pb-28">
       {/* Navigation */}
       <div className="flex items-center gap-2 mb-6">
-        <Link href="/admin" className="text-xs text-gray-400 hover:text-emerald-400 flex items-center gap-1 transition-colors duration-200">
+        <Link href="/admin" className="text-xs text-gray-400 hover:text-red-400 flex items-center gap-1 transition-colors duration-200">
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
@@ -177,7 +177,7 @@ export default function AdminPredictionsPage() {
             <div
               className={`p-3 rounded-xl text-xs font-semibold mb-4 border ${
                 message.type === "success"
-                  ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                  ? "bg-red-500/10 border-red-500/20 text-red-400"
                   : "bg-rose-500/10 border-rose-500/20 text-rose-400"
               }`}
             >
@@ -193,7 +193,7 @@ export default function AdminPredictionsPage() {
               <select
                 value={selectedMatch}
                 onChange={(e) => setSelectedMatch(e.target.value)}
-                className="w-full bg-[#08090f] border border-white/[0.08] focus:border-emerald-500/50 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none transition-all duration-300 font-outfit"
+                className="w-full bg-[#08090f] border border-white/[0.08] focus:border-red-500/50 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none transition-all duration-300 font-outfit"
               >
                 {matches.map((m) => (
                   <option key={m.id} value={m.id}>
@@ -210,9 +210,9 @@ export default function AdminPredictionsPage() {
               <select
                 value={selectedUser}
                 onChange={(e) => setSelectedUser(e.target.value)}
-                className="w-full bg-[#08090f] border border-white/[0.08] focus:border-emerald-500/50 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none transition-all duration-300 font-outfit"
+                className="w-full bg-[#08090f] border border-white/[0.08] focus:border-red-500/50 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none transition-all duration-300 font-outfit"
               >
-                <option value="">-- Choose Family Member --</option>
+                <option value="">-- Choose Predictor --</option>
                 {users.map((u) => (
                   <option key={u.id} value={u.id}>
                     {u.name}
@@ -232,7 +232,7 @@ export default function AdminPredictionsPage() {
                   value={team1Score}
                   onChange={(e) => setTeam1Score(e.target.value)}
                   placeholder="0"
-                  className="w-full bg-[#08090f] border border-white/[0.08] focus:border-emerald-500/50 rounded-xl px-4 py-2.5 text-xs text-white text-center focus:outline-none transition-all duration-300 font-bold"
+                  className="w-full bg-[#08090f] border border-white/[0.08] focus:border-red-500/50 rounded-xl px-4 py-2.5 text-xs text-white text-center focus:outline-none transition-all duration-300 font-bold"
                 />
               </div>
               <div>
@@ -245,7 +245,7 @@ export default function AdminPredictionsPage() {
                   value={team2Score}
                   onChange={(e) => setTeam2Score(e.target.value)}
                   placeholder="0"
-                  className="w-full bg-[#08090f] border border-white/[0.08] focus:border-emerald-500/50 rounded-xl px-4 py-2.5 text-xs text-white text-center focus:outline-none transition-all duration-300 font-bold"
+                  className="w-full bg-[#08090f] border border-white/[0.08] focus:border-red-500/50 rounded-xl px-4 py-2.5 text-xs text-white text-center focus:outline-none transition-all duration-300 font-bold"
                 />
               </div>
             </div>
@@ -272,7 +272,7 @@ export default function AdminPredictionsPage() {
                   Showing all predictions registered for this match.
                 </p>
               </div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 px-2.5 py-1 rounded-full">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-red-400 bg-red-500/10 border border-red-500/25 px-2.5 py-1 rounded-full">
                 {predictions.length} predictions
               </span>
             </div>
@@ -286,7 +286,7 @@ export default function AdminPredictionsPage() {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-white/[0.06] text-[10px] uppercase font-bold tracking-wider text-gray-500">
-                      <th className="pb-3 pl-2">Family Member</th>
+                      <th className="pb-3 pl-2">Predictor</th>
                       <th className="pb-3 text-center">Prediction</th>
                       <th className="pb-3 text-right">Submitted At</th>
                       <th className="pb-3 pr-2 text-right">Action</th>
@@ -307,7 +307,7 @@ export default function AdminPredictionsPage() {
                           </div>
                           <span className="font-bold text-white font-outfit">{p.name}</span>
                         </td>
-                        <td className="py-3.5 text-center font-mono font-extrabold text-emerald-400 text-sm">
+                        <td className="py-3.5 text-center font-mono font-extrabold text-red-400 text-sm">
                           {p.team1_score} - {p.team2_score}
                         </td>
                         <td className="py-3.5 text-right text-gray-500 font-mono text-[10px]">

@@ -33,7 +33,7 @@ function StatusBadge({ match }: { match: Match }) {
     color = "bg-rose-500/10 text-rose-400 border border-rose-500/20 animate-pulse font-extrabold";
   } else if (now < kickoff) {
     label = "Upcoming";
-    color = "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+    color = "bg-red-500/10 text-red-400 border border-red-500/20";
   } else if (now < liveEnd) {
     label = "🔴 Live";
     color = "bg-rose-500/10 text-rose-400 border border-rose-500/20 animate-pulse";
@@ -53,18 +53,14 @@ function MatchItem({ match }: { match: Match }) {
   return (
     <Link
       href={"/predict/" + match.id}
-      className="block p-4 hover:bg-white/[0.02] active:scale-[0.99] transition-all duration-300 rounded-xl"
+      className="block p-4 hover:bg-white/[0.02] active:scale-[0.99] transition-all duration-300 rounded-xl group"
     >
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-1.5">
           <StatusBadge match={match} />
-          {match.with_reward === 1 ? (
-            <span className="text-[9px] uppercase font-black tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          {match.with_reward === 1 && (
+            <span className="text-[9px] uppercase font-black tracking-wider px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
               💰 Reward
-            </span>
-          ) : (
-            <span className="text-[9px] uppercase font-black tracking-wider px-2 py-0.5 rounded-full bg-white/[0.04] text-gray-500 border border-white/[0.06]">
-              ❌ No Reward
             </span>
           )}
         </div>
@@ -82,7 +78,7 @@ function MatchItem({ match }: { match: Match }) {
           <span className="text-4xl filter drop-shadow select-none hover:scale-110 transition-transform duration-200">
             {match.team1_flag}
           </span>
-          <span className="text-xs font-bold text-gray-300 truncate w-full mt-2 font-outfit">
+          <span className="text-sm font-extrabold text-white mt-3 font-outfit truncate w-full group-hover:text-red-400 transition-colors">
             {match.team1_country}
           </span>
         </div>
@@ -109,7 +105,7 @@ function MatchItem({ match }: { match: Match }) {
           <span className="text-4xl filter drop-shadow select-none hover:scale-110 transition-transform duration-200">
             {match.team2_flag}
           </span>
-          <span className="text-xs font-bold text-gray-300 truncate w-full mt-2 font-outfit">
+          <span className="text-sm font-extrabold text-white mt-3 font-outfit truncate w-full group-hover:text-red-400 transition-colors">
             {match.team2_country}
           </span>
         </div>

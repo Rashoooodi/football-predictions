@@ -61,7 +61,7 @@ export default function HistoryPage() {
             <button
               key={m.id}
               onClick={() => setSelected(m.id)}
-              className="card w-full text-left bg-[#0c0d14]/50 border-white/[0.06] hover:border-emerald-500/20 active:scale-[0.99] transition-all duration-300 p-4 block hover:shadow-lg hover:shadow-emerald-500/[0.01] group"
+              className="card w-full text-left bg-[#0c0d14]/50 border-white/[0.06] hover:border-red-500/20 active:scale-[0.99] transition-all duration-300 p-4 block hover:shadow-lg hover:shadow-red-500/[0.01] group"
             >
               <div className="flex items-center justify-between gap-3">
                 {/* Team 1 */}
@@ -76,7 +76,7 @@ export default function HistoryPage() {
 
                 {/* Score Pill */}
                 <div className="shrink-0 text-center px-3">
-                  <span className="text-lg font-black font-mono tracking-wider bg-white/[0.03] border border-white/[0.08] px-3.5 py-1.5 rounded-2xl shadow-inner text-emerald-400">
+                  <span className="text-lg font-black font-mono tracking-wider bg-white/[0.03] border border-white/[0.08] px-3.5 py-1.5 rounded-2xl shadow-inner text-red-400">
                     {m.team1_score} - {m.team2_score}
                   </span>
                 </div>
@@ -95,7 +95,7 @@ export default function HistoryPage() {
               {/* Match accuracy and predictions statistics bar */}
               <div className="mt-4 pt-3 border-t border-white/[0.03] flex items-center justify-between text-[11px] text-gray-500">
                 <span>Kickoff: {new Date(m.kickoff_time).toLocaleDateString([], { dateStyle: "medium" })}</span>
-                <span className="font-semibold text-emerald-500 bg-emerald-500/5 px-2 py-0.5 rounded-md border border-emerald-500/10">
+                <span className="font-semibold text-red-500 bg-red-500/5 px-2 py-0.5 rounded-md border border-red-500/10">
                   🎯 {m.correct_count} correct ({m.prediction_count} predictions)
                 </span>
               </div>

@@ -6,6 +6,7 @@ const DB_PATH = path.join(process.cwd(), "football.db");
 const db = new Database(DB_PATH);
 
 db.pragma("journal_mode = WAL");
+db.pragma("busy_timeout = 5000");
 db.pragma("foreign_keys = ON");
 
 export default db;

@@ -41,8 +41,9 @@ export default function LeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [stats, setStats] = useState<StatsData>({ stats: [], scoreProphet: null });
-  const [me, setMe] = useState<{ id: number; name: string; phone: string; pfp_path: string | null; is_admin: number } | null>(null);
+  const [me, setMe] = useState<{ id: number; name: string; username: string; pfp_path: string | null; is_admin: number } | null>(null);
   const [announcement, setAnnouncement] = useState("");
+  const [showNotifBanner, setShowNotifBanner] = useState(false);
 
   // PWA states
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -52,11 +53,12 @@ export default function LeaderboardPage() {
   // Profile Edit modal states
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [profileName, setProfileName] = useState("");
-  const [profilePhone, setProfilePhone] = useState("");
+
   const [pfp, setPfp] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
   const [updateError, setUpdateError] = useState("");
+  const [installStatus, setInstallStatus] = useState("");
 
   // Cropper states
   const [cropperSrc, setCropperSrc] = useState<string | null>(null);
@@ -84,7 +86,7 @@ export default function LeaderboardPage() {
         const meData = await meRes.json();
         setMe(meData);
         setProfileName(meData.name);
-        setProfilePhone(meData.phone);
+        requestNotificationPermissionAndSubscribe();
       }
       const annData = await annRes.json();
       setAnnouncement(annData.announcement || "");
@@ -101,34 +103,106 @@ export default function LeaderboardPage() {
       || (window.navigator as any).standalone;
     setIsStandalone(standalone);
 
-    // Capture PWA install prompt
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
+    // Capture prompt from global window
+    if ((window as any).deferredPrompt) {
+      setDeferredPrompt((window as any).deferredPrompt);
+    }
+    (window as any).onBeforeInstallPromptReady = (e: any) => {
       setDeferredPrompt(e);
     };
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+
+    // Show notification request banner if permission is default (unprompted)
+    if (typeof window !== "undefined" && "Notification" in window) {
+      if (Notification.permission === "default") {
+        setShowNotifBanner(true);
+      }
+    }
 
     return () => {
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      (window as any).onBeforeInstallPromptReady = null;
     };
   }, []);
 
+  async function requestNotificationPermissionAndSubscribe(isUserInitiated = false) {
+    if (typeof window === "undefined" || !("Notification" in window) || !("serviceWorker" in navigator)) {
+      return;
+    }
+    try {
+      let perm = Notification.permission;
+      if (perm !== "granted" && isUserInitiated) {
+        perm = await Notification.requestPermission();
+      }
+
+      if (perm === "granted") {
+        const reg = await navigator.serviceWorker.ready;
+        const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+        if (vapidPublicKey) {
+          const padding = "=".repeat((4 - (vapidPublicKey.length % 4)) % 4);
+          const base64 = (vapidPublicKey + padding).replace(/\-/g, "+").replace(/_/g, "/");
+          const rawData = window.atob(base64);
+          const outputArray = new Uint8Array(rawData.length);
+          for (let i = 0; i < rawData.length; ++i) {
+            outputArray[i] = rawData.charCodeAt(i);
+          }
+          
+          let sub;
+          try {
+            sub = await reg.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: outputArray
+            });
+          } catch (e) {
+            console.warn("Failed to subscribe with new key, attempting to unsubscribe first...", e);
+            const existingSub = await reg.pushManager.getSubscription();
+            if (existingSub) {
+              await existingSub.unsubscribe();
+            }
+            sub = await reg.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: outputArray
+            });
+          }
+
+          if (sub) {
+            const res = await fetch("/api/notifications/subscribe", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(sub)
+            });
+            console.log("Push subscription sent to backend, status:", res.status);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Failed to subscribe to push notifications:", err);
+    }
+  }
+
   // Handle standard browser PWA installation
   const handlePWAInstall = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === "accepted") {
-      setDeferredPrompt(null);
-      setIsStandalone(true);
+    if (deferredPrompt) {
+      setInstallStatus("");
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === "accepted") {
+        setDeferredPrompt(null);
+        setIsStandalone(true);
+      }
+    } else {
+      if (isIOS) {
+        setInstallStatus("Safari on iOS doesn't support programmatic install. Tap browser Share 📤 then 'Add to Home Screen' ➕");
+      } else {
+        setInstallStatus("Browser install event is preparing... If it doesn't prompt, please check your browser settings to select Install App.");
+      }
+      setTimeout(() => setInstallStatus(""), 6000);
     }
   };
 
   // Profile Update Submission
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profileName || !profilePhone) {
-      setUpdateError("Name and phone are required.");
+    if (!profileName) {
+      setUpdateError("Name is required.");
       return;
     }
 
@@ -137,7 +211,7 @@ export default function LeaderboardPage() {
 
     const formData = new FormData();
     formData.append("name", profileName);
-    formData.append("phone", profilePhone);
+
     if (pfp) {
       formData.append("pfp", pfp);
     }
@@ -262,36 +336,31 @@ export default function LeaderboardPage() {
   const first = leaderboard.find((e) => e.rank === 1);
   const second = leaderboard.find((e) => e.rank === 2);
   const third = leaderboard.find((e) => e.rank === 3);
-  const remainder = leaderboard.filter((e) => e.rank > 3);
+  const remainder = leaderboard.filter((e) => e.rank > 3).slice(0, 2);
 
   return (
     <div className="max-w-2xl mx-auto p-4 pb-28">
       {/* PWA Install Notification Bar */}
       {!isStandalone && (
-        <div className="mb-4 p-3.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 shadow-md flex items-center justify-between gap-3 animate-fade-in relative overflow-hidden">
+        <div className="mb-4 p-3.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 shadow-md flex flex-col gap-2.5 animate-fade-in relative overflow-hidden">
           <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
-          <div className="flex items-center gap-2">
-            <span className="text-lg">📲</span>
-            <div className="text-left">
-              <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block">Web App Available</span>
-              {isIOS ? (
-                <p className="text-[11px] text-gray-300 mt-0.5">Tap Share 📤 then <span className="font-bold text-white">"Add to Home Screen"</span> ➕</p>
-              ) : deferredPrompt ? (
-                <p className="text-[11px] text-gray-300 mt-0.5">Install app on your phone for full-screen predictions!</p>
-              ) : (
-                <p className="text-[11px] text-gray-300 mt-0.5">Tap browser menu (e.g. three dots or share) and select <span className="font-bold text-white">"Add to Home Screen"</span></p>
-              )}
+          <div className="flex items-center justify-between gap-3 w-full">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">📲</span>
+              <div className="text-left">
+                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block">Web App Available</span>
+                <p className="text-[11px] text-gray-300 mt-0.5">Install the NBR App to receive push alerts and prediction locks!</p>
+              </div>
             </div>
-          </div>
-          {deferredPrompt && !isIOS ? (
             <button
               onClick={handlePWAInstall}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-1.5 px-3 rounded-lg shadow transition-all shrink-0 active:scale-95"
+              className="bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs py-1.5 px-3 rounded-lg shadow transition-all shrink-0 active:scale-95 uppercase tracking-wider"
             >
               Install
             </button>
-          ) : (
-            <button onClick={() => setIsStandalone(true)} className="text-gray-400 hover:text-white text-xs font-bold px-2 shrink-0">Dismiss</button>
+          </div>
+          {installStatus && (
+            <p className="text-[10px] text-indigo-300 font-semibold leading-relaxed border-t border-white/[0.05] pt-2 animate-fade-in">{installStatus}</p>
           )}
         </div>
       )}
@@ -302,7 +371,7 @@ export default function LeaderboardPage() {
           onClick={() => {
             if (me) {
               setProfileName(me.name);
-              setProfilePhone(me.phone);
+
               setPfp(null);
               setPreviewUrl(null);
               setIsProfileModalOpen(true);
@@ -312,15 +381,15 @@ export default function LeaderboardPage() {
           title="Edit Profile"
         >
           {me?.pfp_path ? (
-            <img src={me.pfp_path} alt={me.name} className="w-11 h-11 rounded-full border-2 border-emerald-500/30 object-cover group-hover:scale-105 transition-transform duration-200" />
+            <img src={me.pfp_path} alt={me.name} className="w-11 h-11 rounded-full border-2 border-red-500/30 object-cover group-hover:scale-105 transition-transform duration-200" />
           ) : (
-            <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-emerald-500/20 to-teal-500/20 border border-emerald-500/30 flex items-center justify-center font-bold text-emerald-400 group-hover:scale-105 transition-transform duration-200">
+            <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-red-500/20 to-orange-500/20 border border-red-500/30 flex items-center justify-center font-bold text-red-400 group-hover:scale-105 transition-transform duration-200">
               {me?.name ? me.name[0] : "👤"}
             </div>
           )}
           <div>
             <p className="text-xs text-gray-400 font-medium">Welcome back 👋</p>
-            <h2 className="text-base font-bold text-white font-outfit flex items-center gap-1 group-hover:text-emerald-400 transition-colors duration-200">
+            <h2 className="text-base font-bold text-white font-outfit flex items-center gap-1 group-hover:text-red-400 transition-colors duration-200">
               <span>{me?.name || "Player"}</span>
               <svg className="w-3.5 h-3.5 opacity-40 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -332,7 +401,7 @@ export default function LeaderboardPage() {
         {/* Quick actions/Admin config */}
         <div className="flex gap-2">
           {me?.is_admin ? (
-            <Link href="/admin" className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.08] hover:border-emerald-500/20 text-gray-300 hover:text-emerald-400 transition-all duration-300" title="Admin Panel">
+            <Link href="/admin" className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.08] hover:border-red-500/20 text-gray-300 hover:text-red-400 transition-all duration-300" title="Admin Panel">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -357,13 +426,48 @@ export default function LeaderboardPage() {
 
       {/* Announcement Banner */}
       {announcement && (
-        <div className="mb-6 p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 shadow-[0_4px_30px_rgba(16,185,129,0.02)] flex items-start gap-3 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
+        <div className="mb-6 p-4 rounded-2xl bg-red-500/5 border border-red-500/10 shadow-[0_4px_30px_rgba(16,185,129,0.02)] flex items-start gap-3 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
           <span className="text-xl select-none mt-0.5">📢</span>
           <div>
-            <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest block">Announcement</span>
+            <span className="text-[9px] font-bold text-red-400 uppercase tracking-widest block">Announcement</span>
             <p className="text-xs text-gray-200 mt-1 font-medium leading-relaxed font-outfit">{announcement}</p>
           </div>
+        </div>
+      )}
+
+      {/* Notification banner */}
+      {isStandalone && showNotifBanner && (
+        <div className="mb-6 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10 shadow-[0_4px_30px_rgba(245,158,11,0.02)] flex items-start justify-between gap-3 relative overflow-hidden animate-fade-in">
+          <div className="absolute top-0 left-0 w-1 h-full bg-amber-500"></div>
+          <div className="flex gap-3">
+            <span className="text-xl select-none mt-0.5">🔔</span>
+            <div>
+              <span className="text-[9px] font-bold text-amber-400 uppercase tracking-widest block">Push Notifications</span>
+              <p className="text-xs text-gray-200 mt-1 font-medium leading-relaxed font-outfit">Enable alerts to get instant lock reminders &amp; results!</p>
+              <button 
+                type="button"
+                onClick={async () => {
+                  await requestNotificationPermissionAndSubscribe(true);
+                  if (typeof window !== "undefined" && "Notification" in window) {
+                    if (Notification.permission !== "default") {
+                      setShowNotifBanner(false);
+                    }
+                  }
+                }}
+                className="mt-2.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black text-[10px] font-black uppercase tracking-wider transition-all duration-200"
+              >
+                Enable Notifications
+              </button>
+            </div>
+          </div>
+          <button 
+            type="button" 
+            onClick={() => setShowNotifBanner(false)}
+            className="text-gray-500 hover:text-gray-300 text-xs font-bold shrink-0 self-start"
+          >
+            ✕
+          </button>
         </div>
       )}
 
@@ -572,7 +676,7 @@ export default function LeaderboardPage() {
 
             <div className="text-center mb-6">
               <h2 className="text-xl font-extrabold tracking-tight text-white font-outfit">Edit Profile</h2>
-              <p className="text-[10px] uppercase font-bold tracking-widest text-gray-500 mt-1">Update phone, name, or pfp</p>
+              <p className="text-[10px] uppercase font-bold tracking-widest text-gray-500 mt-1">Update your name or photo</p>
             </div>
 
             {updateError && (
@@ -585,7 +689,7 @@ export default function LeaderboardPage() {
               {/* Profile Photo Upload / Edit */}
               <div className="flex flex-col items-center gap-3">
                 <div className="relative">
-                  <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-emerald-500/20 to-teal-500/20 blur-[2px] opacity-70" />
+                  <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-red-500/20 to-orange-500/20 blur-[2px] opacity-70" />
                   {previewUrl ? (
                     <img src={previewUrl} alt="Preview" className="relative w-20 h-20 rounded-full object-cover border border-white/10" />
                   ) : me.pfp_path ? (
@@ -599,7 +703,7 @@ export default function LeaderboardPage() {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 px-3 py-1.5 rounded-xl transition-all"
+                  className="text-[10px] font-bold text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 px-3 py-1.5 rounded-xl transition-all"
                 >
                   Upload New Photo
                 </button>
@@ -623,15 +727,13 @@ export default function LeaderboardPage() {
                 />
               </div>
 
-              {/* Phone */}
+              {/* Username (read-only) */}
               <div className="space-y-1">
-                <label className="text-[10px] uppercase font-bold text-gray-500 block">Phone Number</label>
-                <input
-                  className="input text-xs py-2.5 px-3 bg-[#08090f] border-white/[0.08]"
-                  value={profilePhone}
-                  onChange={(e) => setProfilePhone(e.target.value)}
-                  required
-                />
+                <label className="text-[10px] uppercase font-bold text-gray-500 block">Username</label>
+                <div className="input text-xs py-2.5 px-3 bg-[#08090f] border-white/[0.08] text-gray-400 select-all cursor-default">
+                  @{me.username}
+                </div>
+                <p className="text-[10px] text-gray-600 ml-1">Username is set by admin and cannot be changed.</p>
               </div>
 
               {/* Actions */}
@@ -687,7 +789,7 @@ export default function LeaderboardPage() {
                 }}
                 className="w-full h-full object-contain pointer-events-none select-none"
               />
-              <div className="absolute inset-0 rounded-full border-2 border-emerald-500/30 pointer-events-none" />
+              <div className="absolute inset-0 rounded-full border-2 border-red-500/30 pointer-events-none" />
             </div>
 
             {/* Slider Control */}
@@ -703,7 +805,7 @@ export default function LeaderboardPage() {
                 step="0.01"
                 value={zoom}
                 onChange={(e) => setZoom(Number(e.target.value))}
-                className="w-full h-1 bg-white/[0.08] rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                className="w-full h-1 bg-white/[0.08] rounded-lg appearance-none cursor-pointer accent-red-500"
               />
             </div>
 
@@ -727,6 +829,7 @@ export default function LeaderboardPage() {
           </div>
         </div>
       )}
+
     </div>
   );
 }

@@ -1,7 +1,7 @@
 {
-  "name": "Janahi Predictions",
-  "short_name": "Janahi Preds",
-  "description": "Predict football scores and track family leaderboards.",
+  "name": "NBR World Cup Predictions",
+  "short_name": "NBR Predictions",
+  "description": "Predict football scores and track leaderboards.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#05060e",

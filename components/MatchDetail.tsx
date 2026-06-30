@@ -69,7 +69,7 @@ export default function MatchDetail({ matchId, onClose }: { matchId: number; onC
             {match.is_finished ? (
               <div className="flex flex-col items-center">
                 <span className="text-[9px] uppercase tracking-wider text-gray-500 font-bold">Final Score</span>
-                <span className="text-2xl font-black font-mono text-emerald-400 mt-0.5">
+                <span className="text-2xl font-black font-mono text-red-400 mt-0.5">
                   {match.team1_score} - {match.team2_score}
                 </span>
               </div>
@@ -89,7 +89,7 @@ export default function MatchDetail({ matchId, onClose }: { matchId: number; onC
         <div className="space-y-2 mb-6">
           {predictions.length === 0 ? (
             <div className="text-center text-gray-500 py-8 text-xs bg-white/[0.01] border border-dashed border-white/[0.05] rounded-2xl">
-              No family predictions submitted yet.
+              No predictions submitted yet.
             </div>
           ) : (
             predictions.map((p, i) => {
@@ -102,7 +102,7 @@ export default function MatchDetail({ matchId, onClose }: { matchId: number; onC
                   key={p.id}
                   className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 ${
                     isCorrect
-                      ? "bg-emerald-500/[0.04] border-emerald-500/20 shadow-[0_2px_10px_rgba(16,185,129,0.05)]"
+                      ? "bg-red-500/[0.04] border-red-500/20 shadow-[0_2px_10px_rgba(16,185,129,0.05)]"
                       : "bg-white/[0.01] border-white/[0.04]"
                   }`}
                 >
@@ -123,13 +123,13 @@ export default function MatchDetail({ matchId, onClose }: { matchId: number; onC
                   <div className="shrink-0 flex items-center gap-2">
                     <span className={`font-mono text-sm font-black px-2.5 py-1 rounded-lg ${
                       isCorrect
-                        ? "text-emerald-400 bg-emerald-500/10 border border-emerald-500/20"
+                        ? "text-red-400 bg-red-500/10 border border-red-500/20"
                         : "text-gray-400 bg-white/[0.02] border border-white/[0.04]"
                     }`}>
                       {p.team1_score} - {p.team2_score}
                     </span>
                     {isCorrect ? (
-                      <span className="text-xs bg-emerald-500 text-black font-black w-4 h-4 rounded-full flex items-center justify-center shadow select-none" title="Correct Score">
+                      <span className="text-xs bg-red-500 text-black font-black w-4 h-4 rounded-full flex items-center justify-center shadow select-none" title="Correct Score">
                         ✓
                       </span>
                     ) : null}

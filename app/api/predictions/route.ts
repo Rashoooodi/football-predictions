@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import db from "@/lib/db";
@@ -22,25 +23,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Predictions for this match are manually frozen by Admin" }, { status: 403 });
   }
 
-  if (new Date(match.prediction_deadline) < new Date()) {
+  if (new Date(match.prediction_deadline + "+03:00") < new Date()) {
     return NextResponse.json({ error: "Predictions locked" }, { status: 403 });
+  }
+
+  if (match.prediction_open_time && new Date(match.prediction_open_time + "+03:00") > new Date()) {
+    return NextResponse.json({ error: "Prediction window not yet open" }, { status: 403 });
   }
 
   if (team1Score < 0 || team2Score < 0) {
     return NextResponse.json({ error: "Scores must be non-negative" }, { status: 400 });
   }
 
-  // Check if any OTHER user has already predicted the exact same score for this match
-  const duplicate = db.prepare(
-    "SELECT * FROM predictions WHERE match_id = ? AND team1_score = ? AND team2_score = ? AND user_id != ?"
-  ).get(matchId, team1Score, team2Score, session.userId) as any;
-
-  if (duplicate) {
-    const otherUser = db.prepare("SELECT name FROM users WHERE id = ?").get(duplicate.user_id) as any;
-    const nameStr = otherUser ? otherUser.name : "Someone else";
-    return NextResponse.json({ error: `${nameStr} has already predicted ${team1Score} - ${team2Score}!` }, { status: 400 });
-  }
-
+  // Removed duplicate exact-score blocker to allow multiple users to predict the same score
   db.prepare(
     "INSERT INTO predictions (user_id, match_id, team1_score, team2_score, submitted_at) " +
       "VALUES (?, ?, ?, ?, datetime('now')) " +
@@ -51,4 +46,15 @@ export async function POST(request: NextRequest) {
   ).run(session.userId, matchId, team1Score, team2Score);
 
   return NextResponse.json({ success: true });
+}
+
+export async function GET(request: NextRequest) {
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const predictions = db
+    .prepare("SELECT match_id, team1_score, team2_score FROM predictions WHERE user_id = ?")
+    .all(session.userId) as { match_id: number; team1_score: number; team2_score: number }[];
+  return NextResponse.json(predictions);
 }

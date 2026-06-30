@@ -50,7 +50,7 @@ export default function AdminAnnouncementPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[300px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-emerald-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-500"></div>
       </div>
     );
   }
@@ -59,7 +59,7 @@ export default function AdminAnnouncementPage() {
     <div className="max-w-md mx-auto p-4 pb-28">
       {/* Navigation */}
       <div className="flex items-center gap-2 mb-6">
-        <Link href="/admin" className="text-xs text-gray-400 hover:text-emerald-400 flex items-center gap-1 transition-colors duration-200">
+        <Link href="/admin" className="text-xs text-gray-400 hover:text-red-400 flex items-center gap-1 transition-colors duration-200">
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
@@ -79,7 +79,7 @@ export default function AdminAnnouncementPage() {
           <div
             className={`p-3 rounded-xl text-xs font-semibold mb-4 border ${
               message.type === "success"
-                ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                ? "bg-red-500/10 border-red-500/20 text-red-400"
                 : "bg-rose-500/10 border-rose-500/20 text-rose-400"
             }`}
           >
@@ -98,7 +98,7 @@ export default function AdminAnnouncementPage() {
               placeholder="e.g. Congrats to Rashid for winning the last match! 🏆"
               maxLength={150}
               rows={4}
-              className="w-full bg-[#08090f] border border-white/[0.08] focus:border-emerald-500/50 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none transition-all duration-300 resize-none font-outfit"
+              className="w-full bg-[#08090f] border border-white/[0.08] focus:border-red-500/50 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none transition-all duration-300 resize-none font-outfit"
             />
             <div className="flex justify-between items-center mt-1">
               <span className="text-[10px] text-gray-500">

@@ -5,7 +5,7 @@ export function initDb() {
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
-      phone TEXT UNIQUE NOT NULL,
+      username TEXT UNIQUE NOT NULL,
       pfp_path TEXT,
       is_admin INTEGER DEFAULT 0,
       last_login_at TEXT
@@ -24,6 +24,7 @@ export function initDb() {
       is_finished INTEGER DEFAULT 0,
       with_reward INTEGER DEFAULT 1,
       is_frozen INTEGER DEFAULT 0,
+      prediction_open_time TEXT,
       created_at TEXT DEFAULT (datetime('now'))
     );
 
@@ -47,16 +48,24 @@ export function initDb() {
       value TEXT
     );
     INSERT OR IGNORE INTO settings (key, value) VALUES ('announcement', '');
+
+    CREATE TABLE IF NOT EXISTS push_subscriptions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      subscription_json TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    );
   `);
 
   const admin = db
-    .prepare("SELECT id FROM users WHERE phone = ?")
-    .get("+0000000000");
+    .prepare("SELECT id FROM users WHERE username = ?")
+    .get("admin");
   if (!admin) {
     db.prepare(
-      "INSERT INTO users (name, phone, is_admin) VALUES (?, ?, 1)"
-    ).run("Rashid", "+0000000000");
-    console.log("Created admin user: Rashid (+0000000000)");
+      "INSERT INTO users (name, username, is_admin) VALUES (?, ?, 1)"
+    ).run("Rashid", "admin");
+    console.log("Created admin user: Rashid (admin)");
   }
 }
 

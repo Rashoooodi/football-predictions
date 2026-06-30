@@ -1,11 +1,19 @@
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, getSession } from "@/lib/auth";
 import db from "@/lib/db";
 
 export async function GET() {
-  const matches = db
-    .prepare("SELECT * FROM matches ORDER BY kickoff_time DESC")
-    .all();
+  const session = await getSession();
+  const isAdmin = session?.isAdmin || false;
+
+  let query = "SELECT * FROM matches";
+  if (!isAdmin) {
+    query += " WHERE is_hidden = 0";
+  }
+  query += " ORDER BY kickoff_time DESC";
+
+  const matches = db.prepare(query).all();
   return NextResponse.json(matches);
 }
 
@@ -23,13 +31,21 @@ export async function POST(request: NextRequest) {
   const predictionDeadline = body.predictionDeadline;
   const withReward = body.withReward !== false ? 1 : 0;
 
+  const predictionOpenTime = body.predictionOpenTime || null;
+  const api_id = body.api_id || null;
+  const is_hidden = body.is_hidden !== undefined ? body.is_hidden : 0;
+
+  const team1_score = body.team1_score !== undefined ? body.team1_score : null;
+  const team2_score = body.team2_score !== undefined ? body.team2_score : null;
+  const is_finished = body.is_finished !== undefined ? body.is_finished : 0;
+
   if (!team1 || !team2 || !kickoffTime || !predictionDeadline) {
     return NextResponse.json({ error: "All fields required" }, { status: 400 });
   }
 
   const result = db
     .prepare(
-      "INSERT INTO matches (team1_country, team2_country, team1_flag, team2_flag, kickoff_time, prediction_deadline, with_reward) VALUES (?, ?, ?, ?, ?, ?, ?)"
+      "INSERT INTO matches (team1_country, team2_country, team1_flag, team2_flag, kickoff_time, prediction_deadline, with_reward, prediction_open_time, api_id, is_hidden, team1_score, team2_score, is_finished) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
     .run(
       team1.name,
@@ -38,7 +54,13 @@ export async function POST(request: NextRequest) {
       team2.flag,
       kickoffTime,
       predictionDeadline,
-      withReward
+      withReward,
+      predictionOpenTime,
+      api_id,
+      is_hidden,
+      team1_score,
+      team2_score,
+      is_finished
     );
 
   return NextResponse.json({ id: result.lastInsertRowid });

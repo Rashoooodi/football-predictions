@@ -16,13 +16,13 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Janahi Predictions",
-  description: "World Cup prediction tracker for the family",
+  title: "NBR World Cup Predictions",
+  description: "World Cup prediction tracker",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Janahi Preds",
+    title: "NBR Predictions",
   },
 };
 
@@ -41,11 +41,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${outfit.variable} ${inter.variable} dark`}>
-      <body className="bg-[#05060e] text-[#f8fafc] min-h-screen font-sans antialiased relative overflow-x-hidden selection:bg-emerald-500/30 selection:text-emerald-300">
+      <body className="bg-[#05060e] text-[#f8fafc] min-h-screen font-sans antialiased relative overflow-x-hidden selection:bg-red-500/30 selection:text-red-300">
         {/* Background Ambient Glows */}
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-emerald-500/10 blur-[120px] pointer-events-none -z-10" />
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-red-500/10 blur-[120px] pointer-events-none -z-10" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-500/10 blur-[120px] pointer-events-none -z-10" />
-        <div className="absolute top-[30%] right-[-20%] w-[40%] h-[40%] rounded-full bg-teal-500/5 blur-[100px] pointer-events-none -z-10" />
+        <div className="absolute top-[30%] right-[-20%] w-[40%] h-[40%] rounded-full bg-orange-500/5 blur-[100px] pointer-events-none -z-10" />
 
         <main className="pb-32">{children}</main>
         <NavigationBar />
@@ -54,12 +54,23 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `
+              window.deferredPrompt = null;
+              window.addEventListener('beforeinstallprompt', function(e) {
+                e.preventDefault();
+                window.deferredPrompt = e;
+                if (window.onBeforeInstallPromptReady) {
+                  window.onBeforeInstallPromptReady(e);
+                }
+              });
+
               if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js').catch(function(err) {
-                    console.log('ServiceWorker registration failed: ', err);
+                if (document.readyState === 'complete') {
+                  navigator.serviceWorker.register('/sw.js');
+                } else {
+                  window.addEventListener('load', function() {
+                    navigator.serviceWorker.register('/sw.js');
                   });
-                });
+                }
               }
             `
           }}

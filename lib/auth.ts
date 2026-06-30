@@ -25,7 +25,7 @@ export async function createSession(userId: number): Promise<void> {
 
   cookies().set("session", token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: false,
     sameSite: "lax",
     maxAge: 60 * 60 * 24 * 30,
     path: "/",
@@ -63,9 +63,9 @@ export function logout(): void {
   cookies().delete("session");
 }
 
-export function authenticatePhone(phone: string): number | null {
+export function authenticateUsername(username: string): number | null {
   const user = db
-    .prepare("SELECT id FROM users WHERE phone = ?")
-    .get(phone) as { id: number } | undefined;
+    .prepare("SELECT id FROM users WHERE username = ?")
+    .get(username.trim().toLowerCase()) as { id: number } | undefined;
   return user?.id ?? null;
 }

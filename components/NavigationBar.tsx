@@ -24,8 +24,7 @@ export default function NavigationBar() {
       .catch(() => {});
   }, [pathname]);
 
-  // Hide navigation bar on login page
-  if (pathname === "/") return null;
+  if (pathname === "/" || pathname === "/desktop") return null;
 
   const tabs = [
     {
@@ -39,7 +38,7 @@ export default function NavigationBar() {
     },
     {
       href: "/family",
-      label: "Family",
+      label: "Predictors",
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
@@ -80,7 +79,7 @@ export default function NavigationBar() {
             href={tab.href}
             className={`flex flex-col items-center gap-1 py-2 px-4 rounded-xl transition-all duration-300 ${
               isActive
-                ? "text-emerald-400 bg-emerald-500/10 scale-105 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]"
+                ? "text-red-400 bg-red-500/10 scale-105 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]"
                 : "text-gray-400 hover:text-gray-200"
             }`}
           >

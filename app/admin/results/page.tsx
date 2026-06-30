@@ -83,7 +83,7 @@ export default function ResultsPage() {
               ) : m.team1_score !== null && m.team2_score !== null ? (
                 <span className="text-[10px] bg-rose-500/10 text-rose-400 border border-rose-500/25 font-bold uppercase tracking-wider px-2 py-0.5 rounded-full animate-pulse">🔴 Live Score</span>
               ) : (
-                <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">Pending</span>
+                <span className="text-[10px] bg-red-500/10 text-red-400 border border-red-500/20 font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">Pending</span>
               )}
             </div>
 
@@ -98,7 +98,7 @@ export default function ResultsPage() {
                     [m.id]: { ...scores[m.id], s1: e.target.value },
                   })
                 }
-                className="w-14 h-11 text-center text-lg bg-[#08090f] border border-white/[0.08] rounded-xl text-white focus:outline-none focus:border-emerald-500/80 focus:ring-1 focus:ring-emerald-500/30 transition-all duration-300 p-0"
+                className="w-14 h-11 text-center text-lg bg-[#08090f] border border-white/[0.08] rounded-xl text-white focus:outline-none focus:border-red-500/80 focus:ring-1 focus:ring-red-500/30 transition-all duration-300 p-0"
               />
               <span className="text-gray-500">-</span>
               <input
@@ -111,7 +111,7 @@ export default function ResultsPage() {
                     [m.id]: { ...scores[m.id], s2: e.target.value },
                   })
                 }
-                className="w-14 h-11 text-center text-lg bg-[#08090f] border border-white/[0.08] rounded-xl text-white focus:outline-none focus:border-emerald-500/80 focus:ring-1 focus:ring-emerald-500/30 transition-all duration-300 p-0"
+                className="w-14 h-11 text-center text-lg bg-[#08090f] border border-white/[0.08] rounded-xl text-white focus:outline-none focus:border-red-500/80 focus:ring-1 focus:ring-red-500/30 transition-all duration-300 p-0"
               />
               
               <div className="flex items-center gap-2 ml-auto">
@@ -123,7 +123,7 @@ export default function ResultsPage() {
                 </button>
                 <button
                   onClick={() => handleSubmit(m.id, false)}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs py-2 px-3 rounded-lg shadow-sm transition-all duration-200 active:scale-95"
+                  className="bg-red-600 hover:bg-red-500 text-white font-bold text-xs py-2 px-3 rounded-lg shadow-sm transition-all duration-200 active:scale-95"
                 >
                   Finalize
                 </button>

@@ -20,7 +20,7 @@ type Match = {
 type User = {
   id: number;
   name: string;
-  phone: string;
+  username: string;
   pfp_path: string | null;
 };
 
@@ -38,7 +38,7 @@ type LedgerItem = {
 };
 
 export default function AdminToolsPage() {
-  const [activeTab, setActiveTab] = useState<"broadcast" | "audit" | "ledger" | "backup">("broadcast");
+  const [activeTab, setActiveTab] = useState<"broadcast" | "audit" | "ledger" | "backup" | "settings">("broadcast");
   
   // States
   const [upcomingMatches, setUpcomingMatches] = useState<Match[]>([]);
@@ -49,21 +49,31 @@ export default function AdminToolsPage() {
   const [loading, setLoading] = useState(false);
   const [broadcastText, setBroadcastText] = useState("");
   const [copied, setCopied] = useState(false);
+  const [firstPts, setFirstPts] = useState(2);
+  const [otherPts, setOtherPts] = useState(1);
+  const [savingSettings, setSavingSettings] = useState(false);
 
   async function loadData() {
     setLoading(true);
     try {
-      const [lbRes, statsRes, matchesRes, usersRes] = await Promise.all([
+      const [lbRes, statsRes, matchesRes, usersRes, settingsRes] = await Promise.all([
         fetch("/api/leaderboard"),
         fetch("/api/stats"),
         fetch("/api/matches/today"),
         fetch("/api/users"),
+        fetch("/api/admin/settings"),
       ]);
 
       const lb = await lbRes.json();
       const statsObj = await statsRes.json();
       const upcoming = await matchesRes.json();
       const allUsers = await usersRes.json();
+      const settingsObj = await settingsRes.json();
+
+      if (settingsObj) {
+        setFirstPts(settingsObj.first_correct_points || 2);
+        setOtherPts(settingsObj.other_correct_points || 1);
+      }
 
       setLeaderboard(lb);
       setStreaks(statsObj.stats || []);
@@ -133,13 +143,30 @@ export default function AdminToolsPage() {
     }
   }
 
+  async function saveSettings(e: React.FormEvent) {
+    e.preventDefault();
+    setSavingSettings(true);
+    try {
+      await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ first_correct_points: firstPts, other_correct_points: otherPts }),
+      });
+      alert("Settings saved!");
+    } catch {
+      alert("Error saving settings");
+    } finally {
+      setSavingSettings(false);
+    }
+  }
+
   useEffect(() => {
     loadData();
   }, []);
 
   function generateBroadcastMessage(lb: any[], streakList: any[], upcoming: Match[]) {
     const lines: string[] = [];
-    lines.push("🏆 *JANAHI PREDICTIONS UPDATE* 🏆");
+    lines.push("🏆 *NBR PREDICTIONS UPDATE* 🏆");
     lines.push("━━━━━━━━━━━━━━━━━━");
     lines.push("");
 
@@ -180,7 +207,7 @@ export default function AdminToolsPage() {
       lines.push("");
     }
 
-    lines.push("👉 Submit predictions now on the PWA app: Janahi Predictions!");
+    lines.push("👉 Submit predictions now on the PWA app: NBR Predictions!");
     setBroadcastText(lines.join("\n"));
   }
 
@@ -209,12 +236,12 @@ export default function AdminToolsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="grid grid-cols-4 bg-[#0c0d14]/40 p-1 rounded-xl border border-white/[0.04] mb-6 gap-1">
+      <div className="grid grid-cols-5 bg-[#0c0d14]/40 p-1 rounded-xl border border-white/[0.04] mb-6 gap-1">
         <button
           onClick={() => setActiveTab("broadcast")}
           className={`py-2 text-[10px] sm:text-xs font-bold rounded-lg transition-all ${
             activeTab === "broadcast"
-              ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
+              ? "bg-red-500/10 border border-red-500/20 text-red-400"
               : "text-gray-400 hover:text-white"
           }`}
         >
@@ -224,7 +251,7 @@ export default function AdminToolsPage() {
           onClick={() => setActiveTab("audit")}
           className={`py-2 text-[10px] sm:text-xs font-bold rounded-lg transition-all ${
             activeTab === "audit"
-              ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
+              ? "bg-red-500/10 border border-red-500/20 text-red-400"
               : "text-gray-400 hover:text-white"
           }`}
         >
@@ -234,7 +261,7 @@ export default function AdminToolsPage() {
           onClick={() => setActiveTab("ledger")}
           className={`py-2 text-[10px] sm:text-xs font-bold rounded-lg transition-all ${
             activeTab === "ledger"
-              ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
+              ? "bg-red-500/10 border border-red-500/20 text-red-400"
               : "text-gray-400 hover:text-white"
           }`}
         >
@@ -244,11 +271,21 @@ export default function AdminToolsPage() {
           onClick={() => setActiveTab("backup")}
           className={`py-2 text-[10px] sm:text-xs font-bold rounded-lg transition-all ${
             activeTab === "backup"
-              ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
+              ? "bg-red-500/10 border border-red-500/20 text-red-400"
               : "text-gray-400 hover:text-white"
           }`}
         >
           💾 Backup
+        </button>
+        <button
+          onClick={() => setActiveTab("settings")}
+          className={`py-2 text-[10px] sm:text-xs font-bold rounded-lg transition-all ${
+            activeTab === "settings"
+              ? "bg-red-500/10 border border-red-500/20 text-red-400"
+              : "text-gray-400 hover:text-white"
+          }`}
+        >
+          ⚙️ Settings
         </button>
       </div>
 
@@ -300,26 +337,24 @@ export default function AdminToolsPage() {
 
                 <h4 className="text-xs font-bold text-rose-400 mb-2">Missing Predictions ({item.missingUsers.length}):</h4>
                 {item.missingUsers.length === 0 ? (
-                  <p className="text-xs text-emerald-400 font-medium">🎉 Everyone has predicted this match!</p>
+                  <p className="text-xs text-red-400 font-medium">🎉 Everyone has predicted this match!</p>
                 ) : (
                   <div className="flex flex-wrap gap-2">
                     {item.missingUsers.map((u) => {
-                      const nudgeMsg = encodeURIComponent(`Hey ${u.name}! Don't forget to predict ${item.match.team1_country} vs ${item.match.team2_country} on Janahi Predictions before lock! ⚽`);
+                      const nudgeMsg = encodeURIComponent(`Hey ${u.name}! Don't forget to predict ${item.match.team1_country} vs ${item.match.team2_country} on NBR Predictions before lock! ⚽`);
                       return (
                         <div
                           key={u.id}
                           className="flex items-center gap-2 bg-[#08090f] border border-white/[0.05] pl-2.5 pr-1.5 py-1 rounded-xl text-xs"
                         >
                           <span className="text-gray-300 font-medium">{u.name}</span>
-                          <a
-                            href={`https://wa.me/${u.phone.replace(/[^0-9]/g, "")}?text=${nudgeMsg}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold text-[10px] py-1 px-2 rounded-lg transition-all"
-                            title="Send WhatsApp Nudge"
+                          <button
+                            onClick={() => navigator.clipboard?.writeText(decodeURIComponent(nudgeMsg))}
+                            className="bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold text-[10px] py-1 px-2 rounded-lg transition-all"
+                            title="Copy nudge message"
                           >
                             Nudge 💬
-                          </a>
+                          </button>
                         </div>
                       );
                     })}
@@ -355,7 +390,7 @@ export default function AdminToolsPage() {
                       )}
                       <span className="text-sm font-bold text-white">{item.name}</span>
                     </div>
-                    <span className="text-sm font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-xl">
+                    <span className="text-sm font-black text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-1 rounded-xl">
                       🏆 {item.wins_count} Win{item.wins_count === 1 ? "" : "s"}
                     </span>
                   </div>
@@ -395,6 +430,48 @@ export default function AdminToolsPage() {
             </a>
           </div>
         </div>
+      )}
+      {/* TAB 5: SETTINGS */}
+      {!loading && activeTab === "settings" && (
+        <form onSubmit={saveSettings} className="space-y-4">
+          <div className="card bg-[#0c0d14]/40 border-white/[0.04] p-5">
+            <h3 className="text-base font-bold text-white font-outfit mb-4 flex items-center gap-2">
+              <span className="w-8 h-8 rounded-xl bg-red-500/10 text-red-400 flex items-center justify-center text-sm border border-red-500/20">⚙️</span>
+              Scoring Configuration
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="field-label">Points for First Correct Predictor</label>
+                <input
+                  type="number"
+                  value={firstPts}
+                  onChange={(e) => setFirstPts(Number(e.target.value))}
+                  className="input bg-[#0c0d14] text-white"
+                  min={0}
+                  required
+                />
+              </div>
+              <div>
+                <label className="field-label">Points for Other Correct Predictors</label>
+                <input
+                  type="number"
+                  value={otherPts}
+                  onChange={(e) => setOtherPts(Number(e.target.value))}
+                  className="input bg-[#0c0d14] text-white"
+                  min={0}
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={savingSettings}
+                className="btn-primary w-full py-3 mt-2"
+              >
+                {savingSettings ? "Saving..." : "Save Settings"}
+              </button>
+            </div>
+          </div>
+        </form>
       )}
     </div>
   );

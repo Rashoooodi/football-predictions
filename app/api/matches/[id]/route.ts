@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import db from "@/lib/db";
@@ -25,29 +26,37 @@ export async function PUT(
   const team1_country = body.team1_country;
   const team2_country = body.team2_country;
   const team1_flag = body.team1_flag;
-  const team2_flag = body.team2_flag;
-  const kickoff_time = body.kickoff_time;
-  const prediction_deadline = body.prediction_deadline;
-  const with_reward = body.with_reward === 1 || body.with_reward === true ? 1 : 0;
-  const is_frozen = body.is_frozen === 1 || body.is_frozen === true ? 1 : 0;
+  const team1 = body.team1_country;
+  const team2 = body.team2_country;
+  const team1Flag = body.team1_flag;
+  const team2Flag = body.team2_flag;
+  const kickoffTime = body.kickoff_time;
+  const predictionDeadline = body.prediction_deadline;
+  const withReward = body.with_reward === 1 || body.with_reward === true ? 1 : 0;
 
-  if (!team1_country || !team2_country || !team1_flag || !team2_flag || !kickoff_time || !prediction_deadline) {
+  const predictionOpenTime = body.prediction_open_time || null;
+  const isFrozen = body.is_frozen !== undefined ? (body.is_frozen ? 1 : 0) : 0;
+  const isHidden = body.is_hidden !== undefined ? (body.is_hidden ? 1 : 0) : (match as any).is_hidden;
+
+  if (!team1 || !team2 || !team1Flag || !team2Flag || !kickoffTime || !predictionDeadline) {
     return NextResponse.json({ error: "Required fields missing" }, { status: 400 });
   }
 
   try {
     db.prepare(
       "UPDATE matches SET team1_country = ?, team2_country = ?, team1_flag = ?, team2_flag = ?, " +
-        "kickoff_time = ?, prediction_deadline = ?, with_reward = ?, is_frozen = ? WHERE id = ?"
+        "kickoff_time = ?, prediction_deadline = ?, with_reward = ?, is_frozen = ?, prediction_open_time = ?, is_hidden = ? WHERE id = ?"
     ).run(
-      team1_country,
-      team2_country,
-      team1_flag,
-      team2_flag,
-      kickoff_time,
-      prediction_deadline,
-      with_reward,
-      is_frozen,
+      team1,
+      team2,
+      team1Flag,
+      team2Flag,
+      kickoffTime,
+      predictionDeadline,
+      withReward,
+      isFrozen,
+      predictionOpenTime,
+      isHidden,
       params.id
     );
 

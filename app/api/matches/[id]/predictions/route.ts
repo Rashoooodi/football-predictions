@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import db from "@/lib/db";
@@ -8,24 +9,25 @@ export async function GET(
 ) {
   const session = await getSession();
   const userId = session?.userId || null;
+  const isAdmin = session?.isAdmin || false;
 
   const match = db.prepare("SELECT * FROM matches WHERE id = ?").get(params.id) as any;
   if (!match) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const predictions = db
     .prepare(
-      "SELECT p.*, u.name, u.pfp_path " +
+      "SELECT p.*, u.name, u.pfp_path, u.is_hidden " +
         "FROM predictions p " +
         "JOIN users u ON p.user_id = u.id " +
-        "WHERE p.match_id = ? " +
+        "WHERE p.match_id = ? AND (u.is_hidden = 0 OR ? = 1) " +
         "ORDER BY p.submitted_at ASC"
     )
-    .all(params.id);
+    .all(params.id, isAdmin ? 1 : 0);
 
   const deadlinePassed = new Date(match.prediction_deadline) < new Date();
 
   const maskedPredictions = predictions.map((p: any) => {
-    if (!deadlinePassed && p.user_id !== userId) {
+    if (!deadlinePassed && p.user_id !== userId && !isAdmin) {
       return {
         id: p.id,
         user_id: p.user_id,

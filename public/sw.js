@@ -1,4 +1,4 @@
-const CACHE_NAME = "janahi-v2";
+const CACHE_NAME = "nbr-v1";
 
 self.addEventListener("install", (e) => {
   self.skipWaiting();
@@ -8,22 +8,22 @@ self.addEventListener("activate", (e) => {
   e.waitUntil(clients.claim());
 });
 
-self.addEventListener("fetch", () => {
-  // Pass-through — no cache strategy needed for dynamic app
+self.addEventListener("fetch", (event) => {
+  event.respondWith(fetch(event.request).catch(() => new Response("Offline")));
 });
 
 /* ── Push Notifications ── */
 self.addEventListener("push", (e) => {
   if (!e.data) return;
   let data;
-  try { data = e.data.json(); } catch { data = { title: "Janahi Predictions", body: e.data.text() }; }
+  try { data = e.data.json(); } catch { data = { title: "NBR Predictions", body: e.data.text() }; }
 
   e.waitUntil(
-    self.registration.showNotification(data.title || "Janahi Predictions ⚽", {
+    self.registration.showNotification(data.title || "NBR Predictions ⚽", {
       body: data.body || "",
-      icon: "/icons/icon-192.png",
-      badge: "/icons/icon-192.png",
-      tag: data.tag || "janahi",
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
+      tag: data.tag || "nbr",
       data: { url: data.url || "/" },
       vibrate: [200, 100, 200],
     })

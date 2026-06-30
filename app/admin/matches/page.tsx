@@ -20,6 +20,7 @@ type Match = {
   is_finished: number;
   with_reward: number;
   is_frozen: number;
+  prediction_open_time: string | null;
 };
 
 export default function MatchesDashboardPage() {
@@ -32,6 +33,7 @@ export default function MatchesDashboardPage() {
   const [team2, setTeam2] = useState<Country | null>(null);
   const [kickoffTime, setKickoffTime] = useState("");
   const [predictionDeadline, setPredictionDeadline] = useState("");
+  const [predictionOpenTime, setPredictionOpenTime] = useState("");
   const [withReward, setWithReward] = useState(true);
   const [createError, setCreateError] = useState("");
   const [creating, setCreating] = useState(false);
@@ -42,6 +44,7 @@ export default function MatchesDashboardPage() {
   const [editTeam2, setEditTeam2] = useState<Country | null>(null);
   const [editKickoffTime, setEditKickoffTime] = useState("");
   const [editPredictionDeadline, setEditPredictionDeadline] = useState("");
+  const [editPredictionOpenTime, setEditPredictionOpenTime] = useState("");
   const [editWithReward, setEditWithReward] = useState(true);
   const [editIsFrozen, setEditIsFrozen] = useState(false);
   const [editError, setEditError] = useState("");
@@ -97,6 +100,7 @@ export default function MatchesDashboardPage() {
           team2,
           kickoffTime,
           predictionDeadline,
+          predictionOpenTime: predictionOpenTime || null,
           withReward,
         }),
       });
@@ -106,6 +110,7 @@ export default function MatchesDashboardPage() {
         setTeam2(null);
         setKickoffTime("");
         setPredictionDeadline("");
+        setPredictionOpenTime("");
         setWithReward(true);
         setActiveTab("manage");
       } else {
@@ -133,6 +138,7 @@ export default function MatchesDashboardPage() {
           team2_flag: match.team2_flag,
           kickoff_time: match.kickoff_time,
           prediction_deadline: match.prediction_deadline,
+          prediction_open_time: match.prediction_open_time,
           with_reward: match.with_reward,
           is_frozen: updatedStatus,
         }),
@@ -153,6 +159,7 @@ export default function MatchesDashboardPage() {
     setEditTeam2({ name: match.team2_country, flag: match.team2_flag });
     setEditKickoffTime(match.kickoff_time);
     setEditPredictionDeadline(match.prediction_deadline);
+    setEditPredictionOpenTime(match.prediction_open_time || "");
     setEditWithReward(match.with_reward === 1);
     setEditIsFrozen(match.is_frozen === 1);
     setEditError("");
@@ -182,6 +189,7 @@ export default function MatchesDashboardPage() {
           team2_flag: editTeam2.flag,
           kickoff_time: editKickoffTime,
           prediction_deadline: editPredictionDeadline,
+          prediction_open_time: editPredictionOpenTime || null,
           with_reward: editWithReward ? 1 : 0,
           is_frozen: editIsFrozen ? 1 : 0,
         }),
@@ -241,7 +249,7 @@ export default function MatchesDashboardPage() {
           onClick={() => setActiveTab("create")}
           className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
             activeTab === "create"
-              ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
+              ? "bg-red-500/10 border border-red-500/20 text-red-400"
               : "text-gray-400 hover:text-white"
           }`}
         >
@@ -251,7 +259,7 @@ export default function MatchesDashboardPage() {
           onClick={() => setActiveTab("manage")}
           className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
             activeTab === "manage"
-              ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
+              ? "bg-red-500/10 border border-red-500/20 text-red-400"
               : "text-gray-400 hover:text-white"
           }`}
         >
@@ -276,6 +284,17 @@ export default function MatchesDashboardPage() {
               className="input text-xs py-2.5 px-3 bg-[#08090f] border-white/[0.08]"
               required
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5 ml-1">Prediction Opens At</label>
+            <input
+              type="datetime-local"
+              value={predictionOpenTime}
+              onChange={(e) => setPredictionOpenTime(e.target.value)}
+              className="input text-xs py-2.5 px-3 bg-[#08090f] border-white/[0.08]"
+            />
+            <p className="text-[10px] text-gray-500 mt-1 ml-1">Leave empty to open immediately</p>
           </div>
 
           <div>
@@ -342,10 +361,13 @@ export default function MatchesDashboardPage() {
                   <div className="text-[11px] text-gray-400 mt-2 space-y-1">
                     <p>🕒 Kickoff: <span className="font-semibold text-gray-300">{new Date(m.kickoff_time).toLocaleString()}</span></p>
                     <p>🔒 Locks: <span className="font-semibold text-gray-300">{new Date(m.prediction_deadline).toLocaleString()}</span></p>
+                    {m.prediction_open_time && (
+                      <p>🔓 Opens: <span className="font-semibold text-red-400">{new Date(m.prediction_open_time).toLocaleString()}</span></p>
+                    )}
                   </div>
                   <div className="flex gap-2 mt-3">
                     <span className={`text-[9px] uppercase font-bold px-2 py-0.5 rounded-full ${
-                      m.with_reward === 1 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-white/[0.04] text-gray-500 border border-white/[0.06]"
+                      m.with_reward === 1 ? "bg-red-500/10 text-red-400 border border-red-500/20" : "bg-white/[0.04] text-gray-500 border border-white/[0.06]"
                     }`}>
                       {m.with_reward === 1 ? "💰 Reward" : "❌ No Reward"}
                     </span>
@@ -430,6 +452,16 @@ export default function MatchesDashboardPage() {
                   onChange={(e) => setEditKickoffTime(e.target.value)}
                   className="input text-xs py-2.5 px-3 bg-[#08090f] border-white/[0.08]"
                   required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5 ml-1">Prediction Opens At</label>
+                <input
+                  type="datetime-local"
+                  value={editPredictionOpenTime}
+                  onChange={(e) => setEditPredictionOpenTime(e.target.value)}
+                  className="input text-xs py-2.5 px-3 bg-[#08090f] border-white/[0.08]"
                 />
               </div>
 

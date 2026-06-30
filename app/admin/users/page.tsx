@@ -6,7 +6,7 @@ import Link from "next/link";
 type User = {
   id: number;
   name: string;
-  phone: string;
+  username: string;
   pfp_path: string | null;
   is_admin: number;
   last_login_at: string | null;
@@ -17,7 +17,7 @@ export default function UsersPage() {
   
   // Create states
   const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [username, setUsername] = useState("");
   const [pfp, setPfp] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -26,7 +26,7 @@ export default function UsersPage() {
   // Edit states
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editName, setEditName] = useState("");
-  const [editPhone, setEditPhone] = useState("");
+  const [editUsername, setEditUsername] = useState("");
   const [editPfp, setEditPfp] = useState<File | null>(null);
   const [editPreviewUrl, setEditPreviewUrl] = useState<string | null>(null);
   const [deleteCurrentPfp, setDeleteCurrentPfp] = useState(false);
@@ -81,14 +81,14 @@ export default function UsersPage() {
 
     const formData = new FormData();
     formData.append("name", name);
-    formData.append("phone", phone);
+    formData.append("username", username);
     if (pfp) formData.append("pfp", pfp);
 
     const res = await fetch("/api/users", { method: "POST", body: formData });
 
     if (res.ok) {
       setName("");
-      setPhone("");
+      setUsername("");
       setPfp(null);
       await loadUsers();
     } else {
@@ -102,7 +102,7 @@ export default function UsersPage() {
   function handleOpenEdit(u: User) {
     setEditingUser(u);
     setEditName(u.name);
-    setEditPhone(u.phone);
+    setEditUsername(u.username);
     setEditPfp(null);
     setEditPreviewUrl(null);
     setDeleteCurrentPfp(false);
@@ -118,7 +118,7 @@ export default function UsersPage() {
 
     const formData = new FormData();
     formData.append("name", editName);
-    formData.append("phone", editPhone);
+    formData.append("username", editUsername);
     if (editPfp) formData.append("pfp", editPfp);
     if (deleteCurrentPfp) formData.append("deletePfp", "true");
 
@@ -274,7 +274,7 @@ export default function UsersPage() {
             <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5 ml-1">Name</label>
             <input
               type="text"
-              placeholder="e.g. Latifa Janahi"
+              placeholder="e.g. NBR Member"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="input text-xs py-2.5 px-3 bg-[#08090f] border-white/[0.08]"
@@ -283,13 +283,16 @@ export default function UsersPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5 ml-1">Phone Number</label>
+            <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5 ml-1">Username</label>
             <input
-              type="tel"
-              placeholder="e.g. +97339######"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              type="text"
+              placeholder="e.g. john.doe"
+              value={username}
+              onChange={(e) => setUsername(e.target.value.toLowerCase())}
               className="input text-xs py-2.5 px-3 bg-[#08090f] border-white/[0.08]"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               required
             />
           </div>
@@ -316,7 +319,7 @@ export default function UsersPage() {
                 />
                 <label
                   htmlFor="pfp-input"
-                  className="cursor-pointer text-center bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold text-[10px] uppercase py-1.5 px-3 rounded-lg border border-emerald-500/20 transition-all select-none"
+                  className="cursor-pointer text-center bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold text-[10px] uppercase py-1.5 px-3 rounded-lg border border-red-500/20 transition-all select-none"
                 >
                   Choose Photo
                 </label>
@@ -350,10 +353,10 @@ export default function UsersPage() {
 
         {/* Users List */}
         <div className="space-y-2 md:col-span-2">
-          <h2 className="font-extrabold text-sm uppercase tracking-wider text-gray-400 font-outfit px-1 mb-3">Family members</h2>
+          <h2 className="font-extrabold text-sm uppercase tracking-wider text-gray-400 font-outfit px-1 mb-3">Predictors</h2>
           {users.length === 0 ? (
             <div className="text-center py-10 text-xs text-gray-500 bg-white/[0.01] border border-dashed border-white/[0.05] rounded-2xl">
-              No family members registered.
+              No predictors registered.
             </div>
           ) : (
             users.map((u) => (
@@ -375,14 +378,14 @@ export default function UsersPage() {
                         </span>
                       ) : null}
                     </div>
-                    <div className="text-xs text-gray-500 truncate">{u.phone}</div>
+                    <div className="text-xs text-gray-500 truncate">@{u.username}</div>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-1.5 shrink-0">
                   <button
                     onClick={() => handleOpenEdit(u)}
-                    className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 border border-emerald-500/15 hover:border-emerald-500/35 transition-all active:scale-95 text-xs font-bold"
+                    className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/15 hover:border-red-500/35 transition-all active:scale-95 text-xs font-bold"
                   >
                     Edit
                   </button>
@@ -436,12 +439,15 @@ export default function UsersPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5 ml-1">Phone Number</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5 ml-1">Username</label>
                 <input
-                  type="tel"
-                  value={editPhone}
-                  onChange={(e) => setEditPhone(e.target.value)}
+                  type="text"
+                  value={editUsername}
+                  onChange={(e) => setEditUsername(e.target.value.toLowerCase())}
                   className="input text-xs py-2.5 px-3 bg-[#08090f] border-white/[0.08]"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                   required
                 />
               </div>
@@ -471,7 +477,7 @@ export default function UsersPage() {
                     />
                     <label
                       htmlFor="edit-pfp-input"
-                      className="cursor-pointer text-center bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold text-[10px] uppercase py-1.5 px-3 rounded-lg border border-emerald-500/20 transition-all select-none"
+                      className="cursor-pointer text-center bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold text-[10px] uppercase py-1.5 px-3 rounded-lg border border-red-500/20 transition-all select-none"
                     >
                       Choose Photo
                     </label>
@@ -560,7 +566,7 @@ export default function UsersPage() {
                 step="0.05"
                 value={zoom}
                 onChange={(e) => setZoom(parseFloat(e.target.value))}
-                className="w-full accent-emerald-500"
+                className="w-full accent-red-500"
               />
             </div>
 

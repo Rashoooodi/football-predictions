@@ -75,16 +75,8 @@ export default function PredictPage() {
     ? (new Date(match.prediction_deadline) < new Date() || match.is_frozen === 1)
     : false;
 
-  const isScoreTaken = takenScores.some(
-    (t) => t.team1_score === Number(score1) && t.team2_score === Number(score2)
-  );
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (isScoreTaken) {
-      setError("This score is already predicted by someone else!");
-      return;
-    }
     setLoading(true);
     setError("");
 
@@ -123,16 +115,12 @@ export default function PredictPage() {
           <span>Back to Rankings</span>
         </button>
         <div className="flex items-center gap-2">
-          <span className="text-xs uppercase font-extrabold tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full">
+          <span className="text-xs uppercase font-extrabold tracking-widest text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-1 rounded-full">
             Predict score
           </span>
-          {match.with_reward === 1 ? (
-            <span className="text-xs uppercase font-extrabold tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full">
+          {match.with_reward === 1 && (
+            <span className="text-xs uppercase font-extrabold tracking-widest text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-1 rounded-full">
               💰 Reward
-            </span>
-          ) : (
-            <span className="text-xs uppercase font-extrabold tracking-widest text-gray-400 bg-white/[0.04] border border-white/[0.08] px-3 py-1 rounded-full">
-              ❌ No Reward
             </span>
           )}
         </div>
@@ -188,7 +176,7 @@ export default function PredictPage() {
             {match.is_finished ? (
               <div className="mt-4 flex flex-col items-center">
                 <span className="text-xs uppercase text-gray-500 tracking-wider font-semibold">Final Match Score</span>
-                <div className="mt-1 text-4xl font-black font-mono tracking-wider bg-white/[0.03] border border-white/[0.08] px-5 py-2 rounded-2xl shadow-inner text-emerald-400">
+                <div className="mt-1 text-4xl font-black font-mono tracking-wider bg-white/[0.03] border border-white/[0.08] px-5 py-2 rounded-2xl shadow-inner text-red-400">
                   {match.team1_score} - {match.team2_score}
                 </div>
               </div>
@@ -208,7 +196,7 @@ export default function PredictPage() {
 
           <div className="card border-white/[0.08] bg-[#0c0d14]/75 shadow-2xl p-6">
             <h3 className="font-extrabold text-sm uppercase tracking-wider text-gray-400 font-outfit mb-4 text-left">
-              Family Predictions
+              Predictions
             </h3>
             {allPredictions.length === 0 ? (
               <p className="text-xs text-gray-500 text-center py-4">No predictions submitted for this match.</p>
@@ -232,7 +220,7 @@ export default function PredictPage() {
                       key={p.id}
                       className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 ${
                         isCorrect
-                          ? "bg-emerald-500/[0.04] border-emerald-500/20 shadow-[0_2px_10px_rgba(16,185,129,0.05)]"
+                          ? "bg-red-500/[0.04] border-red-500/20 shadow-[0_2px_10px_rgba(16,185,129,0.05)]"
                           : isLiveWinner
                           ? "bg-rose-500/[0.04] border-rose-500/20 shadow-[0_2px_10px_rgba(244,63,94,0.05)] animate-pulse"
                           : "bg-white/[0.01] border-white/[0.04]"
@@ -258,7 +246,7 @@ export default function PredictPage() {
                       <div className="shrink-0 flex items-center gap-2">
                         <span className={`font-mono text-sm font-black px-2.5 py-1 rounded-lg ${
                           isCorrect
-                            ? "text-emerald-400 bg-emerald-500/10 border border-emerald-500/20"
+                            ? "text-red-400 bg-red-500/10 border border-red-500/20"
                             : isLiveWinner
                             ? "text-rose-400 bg-rose-500/10 border border-rose-500/25 animate-pulse"
                             : "text-gray-400 bg-white/[0.02] border-white/[0.04]"
@@ -266,7 +254,7 @@ export default function PredictPage() {
                           {p.team1_score} - {p.team2_score}
                         </span>
                         {isCorrect && (
-                          <span className="text-xs bg-emerald-500 text-black font-black w-4.5 h-4.5 rounded-full flex items-center justify-center shadow select-none" title="Correct Score">
+                          <span className="text-xs bg-red-500 text-black font-black w-4.5 h-4.5 rounded-full flex items-center justify-center shadow select-none" title="Correct Score">
                             ✓
                           </span>
                         )}
@@ -344,16 +332,11 @@ export default function PredictPage() {
           </div>
 
           {existing ? (
-            <div className="bg-emerald-500/5 border border-emerald-500/10 text-emerald-400 text-xs py-2 px-4 rounded-xl text-center font-medium">
+            <div className="bg-red-500/5 border border-red-500/10 text-red-400 text-xs py-2 px-4 rounded-xl text-center font-medium">
               Saved prediction: <span className="font-bold">{existing.team1_score} - {existing.team2_score}</span>
             </div>
           ) : null}
 
-          {isScoreTaken && (
-            <div className="bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs px-3 py-2.5 rounded-xl text-center font-semibold animate-pulse">
-              ⚠️ This score is already predicted by another family member! You must select a unique score combination.
-            </div>
-          )}
 
           {error ? (
             <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs px-3 py-2.5 rounded-xl text-center">
@@ -363,7 +346,7 @@ export default function PredictPage() {
 
           <button
             type="submit"
-            disabled={loading || isScoreTaken}
+            disabled={loading}
             className="btn-primary w-full py-3 flex items-center justify-center gap-2 disabled:opacity-40 disabled:scale-100 disabled:shadow-none disabled:cursor-not-allowed"
           >
             {loading ? (

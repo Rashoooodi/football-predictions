@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import CountrySelector from "@/components/CountrySelector";
+import ApiMatchManager from "@/components/ApiMatchManager";
 
 /* ─── Types ─────────────────────────────────────────────────────── */
 type Country = { name: string; flag: string };
@@ -9,11 +10,11 @@ type Match = {
   id: number; team1_country: string; team2_country: string;
   team1_flag: string; team2_flag: string; kickoff_time: string;
   prediction_deadline: string; team1_score: number | null;
-  team2_score: number | null; is_finished: number; with_reward: number; is_frozen: number;
+  team2_score: number | null; is_finished: number; with_reward: number; is_frozen: number; prediction_open_time: string | null; is_hidden?: number;
 };
 type User = {
-  id: number; name: string; phone: string; pfp_path: string | null;
-  is_admin: number; points?: number; correct_count?: number; current_streak?: number;
+  id: number; name: string; username: string; pfp_path: string | null;
+  is_admin: number; is_hidden: number; points?: number; correct_count?: number; current_streak?: number;
 };
 type Prediction = {
   id: number; user_id: number; name: string; pfp_path: string | null;
@@ -56,16 +57,20 @@ const I = {
   Info:      () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>,
   Star:      () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
   Flag:      () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg>,
+  Smartphone:() => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>,
+  Globe:     () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>,
+  Eye:       () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>,
+  EyeOff:    () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>,
 };
 
 /* ─── Helpers ────────────────────────────────────────────────────── */
 function Avatar({ src, name, size = "md", className = "" }: { src?: string | null; name: string; size?: "xs"|"sm"|"md"|"lg"|"xl"; className?: string }) {
   const sz = { xs:"w-6 h-6 text-[9px]", sm:"w-8 h-8 text-xs", md:"w-10 h-10 text-sm", lg:"w-14 h-14 text-lg", xl:"w-20 h-20 text-2xl" }[size];
   if (src) return <img src={src} alt={name} className={`${sz} rounded-full object-cover border border-white/10 shrink-0 ${className}`} />;
-  return <div className={`${sz} rounded-full bg-gradient-to-tr from-emerald-500/20 to-teal-500/20 border border-emerald-500/20 flex items-center justify-center font-bold text-emerald-400 shrink-0 ${className}`}>{name?.[0] ?? "?"}</div>;
+  return <div className={`${sz} rounded-full bg-gradient-to-tr from-red-500/20 to-orange-500/20 border border-red-500/20 flex items-center justify-center font-bold text-red-400 shrink-0 ${className}`}>{name?.[0] ?? "?"}</div>;
 }
 function Badge({ children, color="gray" }: { children: React.ReactNode; color?: "emerald"|"rose"|"amber"|"gray"|"cyan"|"indigo"|"purple" }) {
-  const c = { emerald:"bg-emerald-500/10 border-emerald-500/20 text-emerald-400", rose:"bg-rose-500/10 border-rose-500/20 text-rose-400", amber:"bg-amber-500/10 border-amber-500/20 text-amber-400", gray:"bg-white/[0.04] border-white/[0.08] text-gray-500", cyan:"bg-cyan-500/10 border-cyan-500/20 text-cyan-400", indigo:"bg-indigo-500/10 border-indigo-500/20 text-indigo-400", purple:"bg-purple-500/10 border-purple-500/20 text-purple-400" }[color];
+  const c = { emerald:"bg-red-500/10 border-red-500/20 text-red-400", rose:"bg-rose-500/10 border-rose-500/20 text-rose-400", amber:"bg-amber-500/10 border-amber-500/20 text-amber-400", gray:"bg-white/[0.04] border-white/[0.08] text-gray-500", cyan:"bg-cyan-500/10 border-cyan-500/20 text-cyan-400", indigo:"bg-indigo-500/10 border-indigo-500/20 text-indigo-400", purple:"bg-purple-500/10 border-purple-500/20 text-purple-400" }[color];
   return <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[9px] font-black uppercase tracking-widest ${c}`}>{children}</span>;
 }
 function Spinner() { return <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />; }
@@ -96,7 +101,7 @@ function ModalActions({ onCancel, loading, label }: { onCancel: () => void; load
 export default function DesktopDashboard() {
   /* Session */
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [authPhone, setAuthPhone] = useState("");
+  const [authUsername, setAuthUsername] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
   const [checking, setChecking] = useState(true);
@@ -111,7 +116,7 @@ export default function DesktopDashboard() {
   const [tournamentEnded, setTournamentEnded] = useState(false);
 
   /* Nav */
-  const [activeTab, setActiveTab] = useState<"leaderboard"|"predict"|"history"|"family"|"trophy"|"admin">("leaderboard");
+  const [activeTab, setActiveTab] = useState<"leaderboard"|"family"|"trophy"|"admin">("admin");
 
   /* Match detail */
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
@@ -128,7 +133,7 @@ export default function DesktopDashboard() {
   /* Profile */
   const [showProfile, setShowProfile] = useState(false);
   const [profName, setProfName] = useState("");
-  const [profPhone, setProfPhone] = useState("");
+
   const [profFile, setProfFile] = useState<File | null>(null);
   const [profPreview, setProfPreview] = useState<string | null>(null);
   const [profError, setProfError] = useState("");
@@ -144,18 +149,25 @@ export default function DesktopDashboard() {
   const [ds, setDs] = useState({ x: 0, y: 0 });
 
   /* Admin sub */
-  const [adminTab, setAdminTab] = useState<"predictors"|"matches"|"scores"|"tools"|"announcement"|"import">("predictors");
+  const [adminTab, setAdminTab] = useState<"predictors"|"matches"|"scores"|"tools"|"announcement"|"import"|"settings">("predictors");
 
   /* Admin users */
-  const [newName, setNewName] = useState(""); const [newPhone, setNewPhone] = useState(""); const [newPfp, setNewPfp] = useState<File | null>(null); const [newPfpPreview, setNewPfpPreview] = useState<string | null>(null); const [addErr, setAddErr] = useState(""); const [adding, setAdding] = useState(false);
-  const [editUser, setEditUser] = useState<User | null>(null); const [editName, setEditName] = useState(""); const [editPhone, setEditPhone] = useState(""); const [editPfp, setEditPfp] = useState<File | null>(null); const [editPfpPreview, setEditPfpPreview] = useState<string | null>(null); const [editDelPfp, setEditDelPfp] = useState(false); const [editUserErr, setEditUserErr] = useState(""); const [savingUser, setSavingUser] = useState(false);
+  const [newName, setNewName] = useState(""); const [newUsername, setNewUsername] = useState(""); const [newPfp, setNewPfp] = useState<File | null>(null); const [newPfpPreview, setNewPfpPreview] = useState<string | null>(null); const [addErr, setAddErr] = useState(""); const [adding, setAdding] = useState(false);
+  const [editUser, setEditUser] = useState<User | null>(null); const [editName, setEditName] = useState(""); const [editUsername, setEditUsername] = useState(""); const [editPfp, setEditPfp] = useState<File | null>(null); const [editPfpPreview, setEditPfpPreview] = useState<string | null>(null); const [editDelPfp, setEditDelPfp] = useState(false); const [editUserErr, setEditUserErr] = useState(""); const [savingUser, setSavingUser] = useState(false);
+  const [editIsAdmin, setEditIsAdmin] = useState(false);
+  const [editIsHidden, setEditIsHidden] = useState(false);
 
   /* Admin matches */
-  const [mT1, setMT1] = useState<Country | null>(null); const [mT2, setMT2] = useState<Country | null>(null); const [mKick, setMKick] = useState(""); const [mDead, setMDead] = useState(""); const [mRew, setMRew] = useState(true); const [mErr, setMErr] = useState(""); const [mCreating, setMCreating] = useState(false);
-  const [editMatch, setEditMatch] = useState<Match | null>(null); const [emT1, setEmT1] = useState<Country | null>(null); const [emT2, setEmT2] = useState<Country | null>(null); const [emKick, setEmKick] = useState(""); const [emDead, setEmDead] = useState(""); const [emRew, setEmRew] = useState(true); const [emFrz, setEmFrz] = useState(false); const [emErr, setEmErr] = useState(""); const [emSaving, setEmSaving] = useState(false);
+  const [mT1, setMT1] = useState<Country | null>(null); const [mT2, setMT2] = useState<Country | null>(null); const [mKick, setMKick] = useState(""); const [mDead, setMDead] = useState(""); const [mOpen, setMOpen] = useState(""); const [mRew, setMRew] = useState(true); const [mErr, setMErr] = useState(""); const [mCreating, setMCreating] = useState(false);
+  const [editMatch, setEditMatch] = useState<Match | null>(null); const [emT1, setEmT1] = useState<Country | null>(null); const [emT2, setEmT2] = useState<Country | null>(null); const [emKick, setEmKick] = useState(""); const [emDead, setEmDead] = useState(""); const [emOpen, setEmOpen] = useState(""); const [emRew, setEmRew] = useState(true); const [emFrz, setEmFrz] = useState(false); const [emErr, setEmErr] = useState(""); const [emSaving, setEmSaving] = useState(false);
 
   /* Admin scores */
   const [scores, setScores] = useState<Record<number, { s1: string; s2: string }>>({});
+
+  /* Admin settings */
+  const [adminFirstPts, setAdminFirstPts] = useState(2);
+  const [adminOtherPts, setAdminOtherPts] = useState(1);
+  const [adminSavingPts, setAdminSavingPts] = useState(false);
   const [resultBroadcast, setResultBroadcast] = useState<string | null>(null);
   const [broadcastMatchName, setBroadcastMatchName] = useState("");
   const [copyOk, setCopyOk] = useState(false);
@@ -167,6 +179,7 @@ export default function DesktopDashboard() {
 
   /* Admin misc */
   const [annInput, setAnnInput] = useState(""); const [annSaving, setAnnSaving] = useState(false);
+  const [pushTitle, setPushTitle] = useState(""); const [pushBody, setPushBody] = useState(""); const [pushUrl, setPushUrl] = useState(""); const [pushSending, setPushSending] = useState(false); const [pushFeedback, setPushFeedback] = useState("");
   const [importFile, setImportFile] = useState<File | null>(null); const [importing, setImporting] = useState(false); const [importReport, setImportReport] = useState<string | null>(null); const [importErr, setImportErr] = useState("");
   const [endingTournament, setEndingTournament] = useState(false);
 
@@ -178,6 +191,7 @@ export default function DesktopDashboard() {
   /* Push notifications */
   const [notifPerm, setNotifPerm] = useState<NotificationPermission | "unsupported">("default");
   const [notifLoading, setNotifLoading] = useState(false);
+  const [myPredictions, setMyPredictions] = useState<Record<number, { s1: number; s2: number }>>({});
 
   /* Scoring rules modal */
   const [showRules, setShowRules] = useState(false);
@@ -192,7 +206,15 @@ export default function DesktopDashboard() {
     (async () => {
       try {
         const r = await fetch("/api/me");
-        if (r.ok) { setCurrentUser(await r.json()); loadAll(); }
+        if (r.ok) {
+          const user = await r.json();
+          if (user.is_admin === 1) {
+            setCurrentUser(user);
+            loadAll();
+          } else {
+            setCurrentUser(null);
+          }
+        }
       } finally { setChecking(false); }
     })();
     if (typeof Notification !== "undefined") setNotifPerm(Notification.permission);
@@ -204,10 +226,10 @@ export default function DesktopDashboard() {
 
   /* ── Load all data ── */
   async function loadAll() {
-    const [lb, st, td, hi, fa, an, tr] = await Promise.all([
+    const [lb, st, td, hi, fa, an, tr, pr, setRes] = await Promise.all([
       fetch("/api/leaderboard"), fetch("/api/stats"), fetch("/api/matches/today"),
       fetch("/api/history"), fetch("/api/family"), fetch("/api/announcement"),
-      fetch("/api/tournament"),
+      fetch("/api/tournament"), fetch("/api/predictions"), fetch("/api/admin/settings")
     ]);
     if (lb.ok) setLeaderboard(await lb.json());
     if (st.ok) { const d = await st.json(); setStreaks(d.stats || []); }
@@ -223,6 +245,17 @@ export default function DesktopDashboard() {
     if (fa.ok) setFamilyMembers(await fa.json());
     if (an.ok) { const d = await an.json(); if (d.message) { setAnnouncement(d); setAnnInput(d.message); } }
     if (tr.ok) { const d = await tr.json(); setTournamentEnded(d.ended); }
+    if (pr.ok) {
+      const list = await pr.json() as { match_id: number; team1_score: number; team2_score: number }[];
+      const mapped: Record<number, { s1: number; s2: number }> = {};
+      list.forEach(p => { mapped[p.match_id] = { s1: p.team1_score, s2: p.team2_score }; });
+      setMyPredictions(mapped);
+    }
+    if (setRes.ok) {
+      const d = await setRes.json();
+      setAdminFirstPts(d.first_correct_points || 2);
+      setAdminOtherPts(d.other_correct_points || 1);
+    }
   }
 
   /* ── Auto-refresh live matches every 30s ── */
@@ -249,7 +282,19 @@ export default function DesktopDashboard() {
     return () => { if (liveRefreshRef.current) clearInterval(liveRefreshRef.current); };
   }, [upcomingMatches, selectedMatch]);
 
-  /* ── Select match ── */
+  async function saveAdminSettings(e: React.FormEvent) {
+    e.preventDefault();
+    setAdminSavingPts(true);
+    await fetch("/api/admin/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ first_correct_points: adminFirstPts, other_correct_points: adminOtherPts })
+    });
+    setAdminSavingPts(false);
+    alert("Settings saved!");
+  }
+
+  /* ── Search & Filter ── */
   async function selectMatch(m: Match) {
     setSelectedMatch(m); setPredError("");
     if (cdRef.current) clearInterval(cdRef.current);
@@ -273,7 +318,13 @@ export default function DesktopDashboard() {
     const taken = selectedPredictions.some(p => p.user_id !== currentUser?.id && p.team1_score === +predScore1 && p.team2_score === +predScore2);
     if (taken) { setPredError("Another family member has this score!"); setSavingPred(false); return; }
     const res = await fetch("/api/predictions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ matchId: selectedMatch.id, team1Score: +predScore1, team2Score: +predScore2 }) });
-    if (res.ok) await selectMatch(selectedMatch);
+    if (res.ok) {
+      setMyPredictions(prev => ({
+        ...prev,
+        [selectedMatch.id]: { s1: +predScore1, s2: +predScore2 }
+      }));
+      await selectMatch(selectedMatch);
+    }
     else { const d = await res.json(); setPredError(d.error || "Failed"); }
     setSavingPred(false);
   }
@@ -281,8 +332,20 @@ export default function DesktopDashboard() {
   /* ── Login / Logout ── */
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault(); setAuthLoading(true); setAuthError("");
-    const res = await fetch("/api/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ phone: authPhone }) });
-    if (res.ok) { setCurrentUser(await res.json()); await loadAll(); } else { const d = await res.json(); setAuthError(d.error || "Not found"); }
+    const res = await fetch("/api/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username: authUsername.trim().toLowerCase() }) });
+    if (res.ok) {
+      const user = await res.json();
+      if (user.is_admin !== 1) {
+        setAuthError("Unauthorized: Only administrators can access the desktop console.");
+        await fetch("/api/login", { method: "DELETE" });
+      } else {
+        setCurrentUser(user);
+        await loadAll();
+      }
+    } else {
+      const d = await res.json();
+      setAuthError(d.error || "Not found");
+    }
     setAuthLoading(false);
   }
   function handleLogout() { fetch("/api/login", { method: "DELETE" }).then(() => { setCurrentUser(null); setSelectedMatch(null); }); }
@@ -308,7 +371,7 @@ export default function DesktopDashboard() {
   /* ── Profile ── */
   async function handleProfileSubmit(e: React.FormEvent) {
     e.preventDefault(); setSavingProf(true); setProfError("");
-    const fd = new FormData(); fd.append("name", profName); fd.append("phone", profPhone); if (profFile) fd.append("pfp", profFile);
+    const fd = new FormData(); fd.append("name", profName); if (profFile) fd.append("pfp", profFile);
     const res = await fetch("/api/me", { method: "POST", body: fd });
     if (res.ok) { setCurrentUser(await res.json()); setShowProfile(false); await loadAll(); } else { const d = await res.json(); setProfError(d.error || "Failed"); }
     setSavingProf(false);
@@ -316,25 +379,54 @@ export default function DesktopDashboard() {
 
   /* ── Push notifications ── */
   async function requestNotifications() {
-    if (!("Notification" in window) || !("serviceWorker" in navigator)) { alert("Push notifications are not supported by your browser."); return; }
+    if (!("Notification" in window) || !("serviceWorker" in navigator)) {
+      alert("Push notifications are not supported by your browser.");
+      return;
+    }
     setNotifLoading(true);
-    const perm = await Notification.requestPermission();
-    setNotifPerm(perm);
-    if (perm === "granted") {
-      // Schedule deadline reminders for all upcoming matches (30min before)
-      upcomingMatches.filter(m => !m.is_finished && !m.is_frozen).forEach(m => {
-        const deadline = new Date(m.prediction_deadline).getTime() - 30 * 60 * 1000;
-        const msUntil = deadline - Date.now();
-        if (msUntil > 0 && msUntil < 24 * 60 * 60 * 1000) { // only within 24hrs
-          setTimeout(() => {
-            new Notification("⏰ Predictions closing soon!", {
-              body: `${m.team1_flag} ${m.team1_country} vs ${m.team2_country} ${m.team2_flag} — 30 minutes left!`,
-              icon: "/icons/icon-192.png",
-              tag: `deadline-${m.id}`,
-            });
-          }, msUntil);
+    try {
+      const perm = await Notification.requestPermission();
+      setNotifPerm(perm);
+      if (perm === "granted") {
+        const reg = await navigator.serviceWorker.ready;
+        const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+        if (vapidPublicKey) {
+          const padding = "=".repeat((4 - (vapidPublicKey.length % 4)) % 4);
+          const base64 = (vapidPublicKey + padding).replace(/\-/g, "+").replace(/_/g, "/");
+          const rawData = window.atob(base64);
+          const outputArray = new Uint8Array(rawData.length);
+          for (let i = 0; i < rawData.length; ++i) {
+            outputArray[i] = rawData.charCodeAt(i);
+          }
+          
+          const sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: outputArray
+          });
+
+          await fetch("/api/notifications/subscribe", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(sub)
+          });
         }
-      });
+
+        upcomingMatches.filter(m => !m.is_finished && !m.is_frozen).forEach(m => {
+          const deadline = new Date(m.prediction_deadline).getTime() - 30 * 60 * 1000;
+          const msUntil = deadline - Date.now();
+          if (msUntil > 0 && msUntil < 24 * 60 * 60 * 1000) {
+            setTimeout(() => {
+              new Notification("⏰ Predictions closing soon!", {
+                body: `${m.team1_flag} ${m.team1_country} vs ${m.team2_country} ${m.team2_flag} — 30 minutes left!`,
+                icon: "/icon-192.png",
+                tag: `deadline-${m.id}`,
+              });
+            }, msUntil);
+          }
+        });
+      }
+    } catch (err) {
+      console.error("Failed to enable push notifications", err);
     }
     setNotifLoading(false);
   }
@@ -342,40 +434,43 @@ export default function DesktopDashboard() {
   /* ── Admin: Users ── */
   async function handleAddUser(e: React.FormEvent) {
     e.preventDefault(); setAdding(true); setAddErr("");
-    const fd = new FormData(); fd.append("name", newName); fd.append("phone", newPhone); if (newPfp) fd.append("pfp", newPfp);
+    const fd = new FormData(); fd.append("name", newName); fd.append("username", newUsername); if (newPfp) fd.append("pfp", newPfp);
     const res = await fetch("/api/users", { method: "POST", body: fd });
-    if (res.ok) { setNewName(""); setNewPhone(""); setNewPfp(null); await loadAll(); } else { const d = await res.json(); setAddErr(d.error || "Failed"); }
+    if (res.ok) { setNewName(""); setNewUsername(""); setNewPfp(null); await loadAll(); } else { const d = await res.json(); setAddErr(d.error || "Failed"); }
     setAdding(false);
   }
-  function openEditUser(u: User) { setEditUser(u); setEditName(u.name); setEditPhone(u.phone); setEditPfp(null); setEditDelPfp(false); setEditUserErr(""); }
+  function openEditUser(u: User) { setEditUser(u); setEditName(u.name); setEditUsername(u.username); setEditIsAdmin(u.is_admin === 1); setEditIsHidden(u.is_hidden === 1); setEditPfp(null); setEditDelPfp(false); setEditUserErr(""); }
   async function handleEditUser(e: React.FormEvent) {
     e.preventDefault(); if (!editUser) return; setSavingUser(true); setEditUserErr("");
-    const fd = new FormData(); fd.append("name", editName); fd.append("phone", editPhone); if (editPfp) fd.append("pfp", editPfp); if (editDelPfp) fd.append("deletePfp", "true");
+    const fd = new FormData(); fd.append("name", editName); fd.append("username", editUsername); fd.append("is_admin", editIsAdmin ? "true" : "false"); fd.append("is_hidden", editIsHidden ? "true" : "false"); if (editPfp) fd.append("pfp", editPfp); if (editDelPfp) fd.append("deletePfp", "true");
     const res = await fetch(`/api/users/${editUser.id}`, { method: "POST", body: fd });
     if (res.ok) { setEditUser(null); await loadAll(); } else { const d = await res.json(); setEditUserErr(d.error || "Failed"); }
     setSavingUser(false);
   }
   async function deleteUser(id: number) {
     if (!confirm("Delete this predictor? All their predictions will be erased!")) return;
-    await fetch(`/api/users/${id}`, { method: "DELETE" }); await loadAll();
+    const res = await fetch(`/api/users/${id}`, { method: "DELETE" }); 
+    if (!res.ok) { const d = await res.json(); alert(d.error || "Failed to delete"); }
+    await loadAll();
   }
 
   /* ── Admin: Matches ── */
   async function handleCreateMatch(e: React.FormEvent) {
     e.preventDefault(); if (!mT1 || !mT2) { setMErr("Select both teams"); return; }
     setMCreating(true); setMErr("");
-    const res = await fetch("/api/matches", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ team1: mT1, team2: mT2, kickoffTime: mKick, predictionDeadline: mDead, withReward: mRew }) });
-    if (res.ok) { setMT1(null); setMT2(null); setMKick(""); setMDead(""); setMRew(true); await loadAll(); } else { const d = await res.json(); setMErr(d.error || "Failed"); }
+    const res = await fetch("/api/matches", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ team1: mT1, team2: mT2, kickoffTime: mKick, predictionDeadline: mDead, predictionOpenTime: mOpen || null, withReward: mRew }) });
+    if (res.ok) { setMT1(null); setMT2(null); setMKick(""); setMDead(""); setMOpen(""); setMRew(true); await loadAll(); } else { const d = await res.json(); setMErr(d.error || "Failed"); }
     setMCreating(false);
   }
-  function openEditMatch(m: Match) { setEditMatch(m); setEmT1({ name: m.team1_country, flag: m.team1_flag }); setEmT2({ name: m.team2_country, flag: m.team2_flag }); setEmKick(m.kickoff_time); setEmDead(m.prediction_deadline); setEmRew(m.with_reward === 1); setEmFrz(m.is_frozen === 1); setEmErr(""); }
+  function openEditMatch(m: Match) { setEditMatch(m); setEmT1({ name: m.team1_country, flag: m.team1_flag }); setEmT2({ name: m.team2_country, flag: m.team2_flag }); setEmKick(m.kickoff_time); setEmDead(m.prediction_deadline); setEmOpen(m.prediction_open_time || ""); setEmRew(m.with_reward === 1); setEmFrz(m.is_frozen === 1); setEmErr(""); }
   async function handleEditMatch(e: React.FormEvent) {
     e.preventDefault(); if (!editMatch || !emT1 || !emT2) return; setEmSaving(true); setEmErr("");
-    const res = await fetch(`/api/matches/${editMatch.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ team1_country: emT1.name, team2_country: emT2.name, team1_flag: emT1.flag, team2_flag: emT2.flag, kickoff_time: emKick, prediction_deadline: emDead, with_reward: emRew ? 1 : 0, is_frozen: emFrz ? 1 : 0 }) });
+    const res = await fetch(`/api/matches/${editMatch.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ team1_country: emT1.name, team2_country: emT2.name, team1_flag: emT1.flag, team2_flag: emT2.flag, kickoff_time: emKick, prediction_deadline: emDead, prediction_open_time: emOpen || null, with_reward: emRew ? 1 : 0, is_frozen: emFrz ? 1 : 0 }) });
     if (res.ok) { setEditMatch(null); await loadAll(); } else { const d = await res.json(); setEmErr(d.error || "Failed"); }
     setEmSaving(false);
   }
-  async function toggleFreeze(m: Match) { await fetch(`/api/matches/${m.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ team1_country: m.team1_country, team2_country: m.team2_country, team1_flag: m.team1_flag, team2_flag: m.team2_flag, kickoff_time: m.kickoff_time, prediction_deadline: m.prediction_deadline, with_reward: m.with_reward, is_frozen: m.is_frozen === 1 ? 0 : 1 }) }); await loadAll(); }
+  async function toggleFreeze(m: Match) { await fetch(`/api/matches/${m.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ team1_country: m.team1_country, team2_country: m.team2_country, team1_flag: m.team1_flag, team2_flag: m.team2_flag, kickoff_time: m.kickoff_time, prediction_deadline: m.prediction_deadline, prediction_open_time: m.prediction_open_time, with_reward: m.with_reward, is_frozen: m.is_frozen === 1 ? 0 : 1 }) }); await loadAll(); }
+  async function toggleVisibility(m: Match) { await fetch(`/api/matches/${m.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ team1_country: m.team1_country, team2_country: m.team2_country, team1_flag: m.team1_flag, team2_flag: m.team2_flag, kickoff_time: m.kickoff_time, prediction_deadline: m.prediction_deadline, prediction_open_time: m.prediction_open_time, with_reward: m.with_reward, is_hidden: m.is_hidden === 1 ? 0 : 1 }) }); await loadAll(); }
   async function deleteMatch(id: number) { if (!confirm("Delete this match and all its predictions?")) return; await fetch(`/api/matches/${id}`, { method: "DELETE" }); await loadAll(); }
 
   /* ── Admin: Scores ── */
@@ -385,7 +480,6 @@ export default function DesktopDashboard() {
     if (res.ok) {
       await loadAll();
       if (!isLive) {
-        // Auto-generate broadcast for final results
         const nr = await fetch(`/api/matches/${matchId}/result/notify`, { method: "POST" });
         if (nr.ok) {
           const nd = await nr.json();
@@ -400,7 +494,7 @@ export default function DesktopDashboard() {
   /* ── Admin: Tools ── */
   useEffect(() => { if (activeTab === "admin" && adminTab === "tools") buildTools(); }, [activeTab, adminTab]);
   async function buildTools() {
-    const lines = ["🏆 *JANAHI PREDICTIONS UPDATE* 🏆", "━━━━━━━━━━━━━━━━━━", ""];
+    const lines = ["🏆 *NBR PREDICTIONS UPDATE* 🏆", "━━━━━━━━━━━━━━━━━━", ""];
     if (leaderboard.length) { lines.push("📊 *Current Standings:*"); leaderboard.slice(0,3).forEach((u,i) => lines.push(`${["🥇","🥈","🥉"][i]} ${u.name}: *${u.points} pts* (${u.correct_count} exact)`)); lines.push(""); }
     const topS = streaks.filter(s => s.current_streak > 0).sort((a,b) => b.current_streak - a.current_streak).slice(0,2);
     if (topS.length) { lines.push("🔥 *Hot Streaks:*"); topS.forEach(s => lines.push(`• ${s.name}: *${s.current_streak} in a row!*`)); lines.push(""); }
@@ -439,6 +533,27 @@ export default function DesktopDashboard() {
   /* ── Announcement ── */
   async function handleAnn(e: React.FormEvent) { e.preventDefault(); setAnnSaving(true); await fetch("/api/announcement", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: annInput }) }); await loadAll(); setAnnSaving(false); }
 
+  async function handlePushBroadcast(e: React.FormEvent) {
+    e.preventDefault(); setPushSending(true); setPushFeedback("");
+    try {
+      const res = await fetch("/api/admin/notifications/broadcast", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: pushTitle, body: pushBody, url: pushUrl })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setPushFeedback(`✅ Broadcasted successfully to ${data.sent} devices!`);
+        setPushTitle(""); setPushBody(""); setPushUrl("");
+      } else {
+        setPushFeedback(`❌ Error: ${data.error}`);
+      }
+    } catch (err: any) {
+      setPushFeedback(`❌ Error: ${err.message || "Failed"}`);
+    }
+    setPushSending(false);
+  }
+
   /* ── Import ── */
   async function handleImport(e: React.FormEvent) {
     e.preventDefault(); if (!importFile) return; setImporting(true); setImportErr(""); setImportReport(null);
@@ -452,23 +567,27 @@ export default function DesktopDashboard() {
   /* ─── RENDER ──────────────────────────────────────────────────── */
   if (checking) return (
     <div className="h-screen bg-[#05060e] flex items-center justify-center">
-      <div className="flex flex-col items-center gap-4"><div className="w-10 h-10 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" /><p className="text-[10px] text-gray-600 font-black uppercase tracking-widest">Loading…</p></div>
+      <div className="flex flex-col items-center gap-4"><div className="w-10 h-10 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin" /><p className="text-[10px] text-gray-600 font-black uppercase tracking-widest">Loading…</p></div>
     </div>
   );
 
   /* ── LOGIN ── */
   if (!currentUser) return (
     <div className="min-h-screen bg-[#05060e] flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none"><div className="absolute top-[-20%] left-[-10%] w-[55%] h-[55%] rounded-full bg-emerald-500/10 blur-[130px]" /><div className="absolute bottom-[-20%] right-[-10%] w-[55%] h-[55%] rounded-full bg-indigo-500/10 blur-[130px]" /></div>
+      <div className="absolute inset-0 pointer-events-none"><div className="absolute top-[-20%] left-[-10%] w-[55%] h-[55%] rounded-full bg-red-500/10 blur-[130px]" /><div className="absolute bottom-[-20%] right-[-10%] w-[55%] h-[55%] rounded-full bg-indigo-500/10 blur-[130px]" /></div>
       <div className="max-w-sm w-full bg-[#0c0d14]/80 backdrop-blur-2xl border border-white/[0.08] rounded-3xl p-8 shadow-[0_32px_80px_rgba(0,0,0,0.5)] relative overflow-hidden">
-        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent" />
+        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-red-500/40 to-transparent" />
         <div className="flex flex-col items-center text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-tr from-emerald-500 to-teal-400 rounded-2xl flex items-center justify-center shadow-[0_8px_24px_rgba(16,185,129,0.3)] mb-4 hover:rotate-12 transition-transform duration-500"><span className="text-3xl select-none">⚽</span></div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white font-outfit mb-1">Janahi <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-400">Predictions</span></h1>
+          <div className="w-16 h-16 bg-gradient-to-tr from-red-500 to-orange-400 rounded-2xl flex items-center justify-center shadow-[0_8px_24px_rgba(16,185,129,0.3)] mb-4 hover:rotate-12 transition-transform duration-500"><span className="text-3xl select-none">⚽</span></div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-white font-outfit mb-2 leading-tight">
+            NBR<br />
+            World Cup<br />
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-red-400 to-orange-400">Predictions</span>
+          </h1>
           <p className="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-black">Desktop Console</p>
         </div>
         <form onSubmit={handleLogin} className="space-y-4">
-          <div><label className="field-label">Phone Number</label><input type="tel" placeholder="+973 #### ####" value={authPhone} onChange={e => setAuthPhone(e.target.value)} className="input bg-[#07080f] border-white/[0.07] text-sm" required /></div>
+          <div><label className="field-label">Username</label><input type="text" placeholder="e.g. khalid.hassan" value={authUsername} onChange={e => setAuthUsername(e.target.value.toLowerCase())} className="input bg-[#07080f] border-white/[0.07] text-sm" autoCapitalize="none" autoCorrect="off" spellCheck={false} required /></div>
           {authError && <div className="flex items-center gap-2 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs px-3 py-2.5 rounded-xl"><div className="w-3.5 h-3.5"><I.Info /></div><span>{authError}</span></div>}
           <button type="submit" disabled={authLoading} className="btn-primary w-full py-3.5 flex items-center justify-center gap-2 text-sm">{authLoading ? <><Spinner /><span>Signing in…</span></> : <><span>Enter Dashboard</span><svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg></>}</button>
         </form>
@@ -490,7 +609,7 @@ export default function DesktopDashboard() {
     <div className="h-screen bg-[#05060e] text-white font-sans flex flex-col overflow-hidden">
       {/* Ambient */}
       <div className="fixed inset-0 pointer-events-none -z-10">
-        <div className="absolute top-[-15%] left-[-10%] w-[40%] h-[40%] rounded-full bg-emerald-500/[0.07] blur-[120px]" />
+        <div className="absolute top-[-15%] left-[-10%] w-[40%] h-[40%] rounded-full bg-red-500/[0.07] blur-[120px]" />
         <div className="absolute bottom-[-15%] right-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-500/[0.07] blur-[120px]" />
         {tournamentEnded && <div className="absolute top-[30%] left-[30%] w-[40%] h-[40%] rounded-full bg-amber-500/[0.05] blur-[150px] animate-pulse" />}
       </div>
@@ -498,24 +617,26 @@ export default function DesktopDashboard() {
       {/* ── HEADER ── */}
       <header className="shrink-0 border-b border-white/[0.05] bg-[#08090f]/70 backdrop-blur-xl px-6 py-3.5 flex items-center justify-between z-20">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-gradient-to-tr from-emerald-500 to-teal-400 rounded-xl flex items-center justify-center shadow-[0_4px_12px_rgba(16,185,129,0.3)] shrink-0"><span className="text-base select-none">⚽</span></div>
-          <div><h1 className="text-base font-black tracking-tight font-outfit leading-none">Janahi <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-400">Predictions</span></h1><span className="text-[9px] text-gray-600 font-black uppercase tracking-[0.18em]">Desktop Console</span></div>
+          <div className="w-8 h-8 bg-gradient-to-tr from-red-500 to-orange-400 rounded-xl flex items-center justify-center shadow-[0_4px_12px_rgba(16,185,129,0.3)] shrink-0"><span className="text-base select-none">⚽</span></div>
+          <div><h1 className="text-xs font-black tracking-tight font-outfit leading-tight">NBR World Cup <span className="bg-clip-text text-transparent bg-gradient-to-r from-red-400 to-orange-400">Predictions</span></h1><span className="text-[9px] text-gray-600 font-black uppercase tracking-[0.18em]">Desktop Console</span></div>
           {hasLiveMatch && <span className="flex items-center gap-1.5 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[9px] font-black uppercase px-2.5 py-1 rounded-full animate-pulse ml-2"><span className="w-1.5 h-1.5 bg-rose-500 rounded-full" />Live</span>}
           {tournamentEnded && <span className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/25 text-amber-400 text-[9px] font-black uppercase px-2.5 py-1 rounded-full ml-2">🏆 Tournament Over</span>}
         </div>
         <div className="flex items-center gap-2">
           <div className="hidden xl:flex items-center gap-2 mr-3">
-            {myRank > 0 && <div className="flex items-center gap-1.5 bg-white/[0.03] border border-white/[0.06] px-3 py-1.5 rounded-xl"><span className="text-[10px] text-gray-500 font-black uppercase">Rank</span><span className="text-emerald-400 font-black text-sm font-mono">#{myRank}</span></div>}
-            <div className="flex items-center gap-1.5 bg-white/[0.03] border border-white/[0.06] px-3 py-1.5 rounded-xl"><span className="text-[10px] text-gray-500 font-black uppercase">Points</span><span className="text-emerald-400 font-black text-sm font-mono">{myPts}</span></div>
+            {myRank > 0 && <div className="flex items-center gap-1.5 bg-white/[0.03] border border-white/[0.06] px-3 py-1.5 rounded-xl"><span className="text-[10px] text-gray-500 font-black uppercase">Rank</span><span className="text-red-400 font-black text-sm font-mono">#{myRank}</span></div>}
+            <div className="flex items-center gap-1.5 bg-white/[0.03] border border-white/[0.06] px-3 py-1.5 rounded-xl"><span className="text-[10px] text-gray-500 font-black uppercase">Points</span><span className="text-red-400 font-black text-sm font-mono">{myPts}</span></div>
           </div>
           {/* Scoring rules */}
           <button onClick={() => setShowRules(true)} title="Scoring Rules" className="w-9 h-9 flex items-center justify-center rounded-xl bg-white/[0.02] border border-white/[0.06] hover:bg-indigo-500/10 hover:border-indigo-500/20 text-gray-500 hover:text-indigo-400 transition-all duration-200"><div className="w-4 h-4"><I.Info /></div></button>
+          {/* Mobile Switch */}
+          <button onClick={() => window.location.href = '/leaderboard'} title="Switch to Mobile App" className="w-9 h-9 flex items-center justify-center rounded-xl bg-white/[0.02] border border-white/[0.06] hover:bg-red-500/10 hover:border-red-500/20 text-gray-500 hover:text-red-400 transition-all duration-200 active:scale-95"><div className="w-4 h-4"><I.Smartphone /></div></button>
           {/* Notifications */}
-          <button onClick={requestNotifications} disabled={notifLoading || notifPerm === "granted"} title={notifPerm === "granted" ? "Notifications on" : "Enable notifications"} className={`w-9 h-9 flex items-center justify-center rounded-xl border transition-all duration-200 ${notifPerm === "granted" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-white/[0.02] border-white/[0.06] hover:bg-amber-500/10 hover:border-amber-500/20 text-gray-500 hover:text-amber-400"}`}>
+          <button onClick={requestNotifications} disabled={notifLoading || notifPerm === "granted"} title={notifPerm === "granted" ? "Notifications on" : "Enable notifications"} className={`w-9 h-9 flex items-center justify-center rounded-xl border transition-all duration-200 ${notifPerm === "granted" ? "bg-red-500/10 border-red-500/20 text-red-400" : "bg-white/[0.02] border-white/[0.06] hover:bg-amber-500/10 hover:border-amber-500/20 text-gray-500 hover:text-amber-400"}`}>
             <div className="w-4 h-4">{notifPerm === "denied" ? <I.BellOff /> : <I.Bell />}</div>
           </button>
           {/* Profile */}
-          <button onClick={() => { setProfName(currentUser.name); setProfPhone(currentUser.phone); setProfFile(null); setProfError(""); setShowProfile(true); }} className="flex items-center gap-2.5 bg-white/[0.02] border border-white/[0.06] hover:border-emerald-500/20 hover:bg-white/[0.04] py-2 pl-2.5 pr-3.5 rounded-xl transition-all duration-200 active:scale-95">
+          <button onClick={() => { setProfName(currentUser.name); setProfFile(null); setProfError(""); setShowProfile(true); }} className="flex items-center gap-2.5 bg-white/[0.02] border border-white/[0.06] hover:border-red-500/20 hover:bg-white/[0.04] py-2 pl-2.5 pr-3.5 rounded-xl transition-all duration-200 active:scale-95">
             <Avatar src={currentUser.pfp_path} name={currentUser.name} size="sm" />
             <div className="hidden md:block text-left"><div className="text-xs font-bold text-white leading-none">{currentUser.name}</div><div className="text-[10px] text-gray-500 mt-0.5">{currentUser.is_admin === 1 ? "Administrator" : "Predictor"}</div></div>
             <div className="w-3.5 h-3.5 text-gray-500 hidden md:block"><I.Edit /></div>
@@ -529,38 +650,103 @@ export default function DesktopDashboard() {
       <div className="flex-1 flex overflow-hidden min-h-0">
 
         {/* ══ LEFT SIDEBAR ══ */}
-        <aside className="w-72 xl:w-80 shrink-0 border-r border-white/[0.04] flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto p-5 space-y-4">
-            {announcement && (
-              <div className="relative overflow-hidden bg-emerald-500/[0.04] border border-emerald-500/15 rounded-2xl p-4">
-                <div className="absolute top-0 left-0 w-[2px] h-full bg-gradient-to-b from-emerald-500 to-teal-500" />
-                <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest mb-1">📢 Announcement</p>
-                <p className="text-xs text-gray-300 leading-relaxed">{announcement.message}</p>
+        <aside className="w-72 xl:w-80 shrink-0 border-r border-white/[0.04] flex flex-col overflow-hidden bg-[#07080e]/40 backdrop-blur-lg">
+          <div className="flex-1 overflow-y-auto p-5 space-y-5 scrollbar-thin">
+            {announcement && announcement.message && (
+              <div className="relative overflow-hidden bg-gradient-to-br from-red-500/[0.04] to-orange-500/[0.01] border border-red-500/10 rounded-2xl p-4 shadow-lg shadow-red-950/20">
+                <div className="absolute top-0 left-0 w-[3px] h-full bg-gradient-to-b from-red-400 to-orange-400" />
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <span className="w-1.5 h-1.5 bg-red-400 rounded-full animate-ping" />
+                  <p className="text-[9px] font-black text-red-400 uppercase tracking-widest">Notice Board</p>
+                </div>
+                <p className="text-xs text-gray-300 leading-relaxed font-medium">{announcement.message}</p>
               </div>
             )}
+
             {/* Podium */}
-            {leaderboard.length >= 2 && (
-              <div className="bg-[#0c0d14]/40 border border-white/[0.05] rounded-2xl p-4">
-                <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-4">🏆 Top Predictors</p>
-                <div className="flex items-end justify-center gap-2 pb-1">
-                  {leaderboard[1] && <div className="flex flex-col items-center flex-1"><div className="relative"><div className="absolute -inset-1 rounded-full bg-slate-400/20 blur-sm" /><Avatar src={leaderboard[1].pfp_path} name={leaderboard[1].name} size="sm" className="relative border-2 border-slate-400" /></div><span className="text-[9px] font-bold text-slate-300 mt-1.5 truncate max-w-[60px] text-center">{leaderboard[1].name}</span><span className="text-[8px] text-slate-500">{leaderboard[1].points}pts</span><div className="w-full bg-slate-400/10 border-t-2 border-slate-400/30 h-10 rounded-t-lg mt-2 flex items-center justify-center text-slate-400 text-xs font-black">2</div></div>}
-                  {leaderboard[0] && <div className="flex flex-col items-center flex-1 -translate-y-3"><div className="text-lg -mb-1 select-none animate-bounce">👑</div><div className="relative"><div className="absolute -inset-1.5 rounded-full bg-amber-500/30 blur-md animate-pulse" /><Avatar src={leaderboard[0].pfp_path} name={leaderboard[0].name} size="md" className="relative border-2 border-amber-400 shadow-lg" /></div><span className="text-[9px] font-black text-amber-300 mt-1.5 truncate max-w-[65px] text-center">{leaderboard[0].name}</span><span className="text-[8px] text-amber-500 font-bold">{leaderboard[0].points}pts</span><div className="w-full bg-amber-500/15 border-t-2 border-amber-400/50 h-16 rounded-t-lg mt-2 flex items-center justify-center text-amber-400 font-black">🏆</div></div>}
-                  {leaderboard[2] && <div className="flex flex-col items-center flex-1"><div className="relative"><div className="absolute -inset-1 rounded-full bg-orange-500/20 blur-sm" /><Avatar src={leaderboard[2].pfp_path} name={leaderboard[2].name} size="sm" className="relative border-2 border-orange-500" /></div><span className="text-[9px] font-bold text-orange-300 mt-1.5 truncate max-w-[60px] text-center">{leaderboard[2].name}</span><span className="text-[8px] text-orange-500">{leaderboard[2].points}pts</span><div className="w-full bg-orange-500/10 border-t-2 border-orange-500/30 h-7 rounded-t-lg mt-2 flex items-center justify-center text-orange-500 text-xs font-black">3</div></div>}
+            {leaderboard.length >= 1 && (
+              <div className="bg-[#0b0c13]/50 border border-white/[0.04] rounded-2xl p-4 shadow-lg shadow-black/30">
+                <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-5 border-b border-white/[0.04] pb-2">🏆 Leaderboard Podium</p>
+                <div className="flex items-end justify-center gap-2.5 pt-4 pb-1">
+                  {/* 2nd Place */}
+                  {leaderboard[1] ? (
+                    <div className="flex flex-col items-center flex-1 min-w-0">
+                      <div className="relative group">
+                        <div className="absolute -inset-1 rounded-full bg-slate-400/10 blur-xs transition-all duration-300 group-hover:bg-slate-400/25" />
+                        <Avatar src={leaderboard[1].pfp_path} name={leaderboard[1].name} size="sm" className="relative border-2 border-slate-400/50 shadow-md transform group-hover:scale-105 transition-transform duration-200" />
+                      </div>
+                      <span className="text-[10px] font-bold text-slate-300 mt-2 truncate w-full text-center">{leaderboard[1].name.split(" ")[0]}</span>
+                      <span className="text-[8px] text-slate-500 font-bold tracking-wider">{leaderboard[1].points} pts</span>
+                      <div className="w-full bg-gradient-to-t from-slate-400/10 via-slate-400/[0.02] to-transparent border-t border-slate-400/30 h-10 rounded-t-xl mt-2.5 flex items-center justify-center text-slate-400 text-xs font-black shadow-inner">2</div>
+                    </div>
+                  ) : <div className="flex-1" />}
+
+                  {/* 1st Place */}
+                  {leaderboard[0] ? (
+                    <div className="flex flex-col items-center flex-1 min-w-0 -translate-y-2">
+                      <div className="text-xl -mb-1.5 select-none animate-bounce">👑</div>
+                      <div className="relative group">
+                        <div className="absolute -inset-1.5 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-500 opacity-20 blur-sm animate-pulse" />
+                        <Avatar src={leaderboard[0].pfp_path} name={leaderboard[0].name} size="md" className="relative border-2 border-amber-400/80 shadow-[0_0_15px_rgba(245,158,11,0.15)] transform group-hover:scale-105 transition-transform duration-200" />
+                      </div>
+                      <span className="text-[10px] font-black text-amber-300 mt-2 truncate w-full text-center">{leaderboard[0].name.split(" ")[0]}</span>
+                      <span className="text-[9px] text-amber-500 font-extrabold tracking-wider">{leaderboard[0].points} pts</span>
+                      <div className="w-full bg-gradient-to-t from-amber-400/15 via-amber-400/[0.03] to-transparent border-t border-amber-400/40 h-14 rounded-t-xl mt-2.5 flex items-center justify-center text-amber-400 text-sm font-black shadow-inner">🏆</div>
+                    </div>
+                  ) : <div className="flex-1" />}
+
+                  {/* 3rd Place */}
+                  {leaderboard[2] ? (
+                    <div className="flex flex-col items-center flex-1 min-w-0">
+                      <div className="relative group">
+                        <div className="absolute -inset-1 rounded-full bg-orange-500/10 blur-xs transition-all duration-300 group-hover:bg-orange-500/25" />
+                        <Avatar src={leaderboard[2].pfp_path} name={leaderboard[2].name} size="sm" className="relative border-2 border-orange-500/40 shadow-md transform group-hover:scale-105 transition-transform duration-200" />
+                      </div>
+                      <span className="text-[10px] font-bold text-orange-300 mt-2 truncate w-full text-center">{leaderboard[2].name.split(" ")[0]}</span>
+                      <span className="text-[8px] text-orange-500 font-bold tracking-wider">{leaderboard[2].points} pts</span>
+                      <div className="w-full bg-gradient-to-t from-orange-500/10 via-orange-500/[0.02] to-transparent border-t border-orange-500/30 h-7 rounded-t-xl mt-2.5 flex items-center justify-center text-orange-400 text-xs font-black shadow-inner">3</div>
+                    </div>
+                  ) : <div className="flex-1" />}
                 </div>
               </div>
             )}
+
             {/* Streaks */}
             {streaks.filter(s => s.current_streak > 0).length > 0 && (
-              <div className="bg-[#0c0d14]/40 border border-white/[0.05] rounded-2xl p-4 space-y-3">
-                <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 flex items-center gap-1.5"><span className="w-3.5 h-3.5 inline-block text-rose-400"><I.Flame /></span> Hot Streaks</p>
-                {streaks.filter(s => s.current_streak > 0).sort((a,b) => b.current_streak - a.current_streak).slice(0,4).map((item, i) => (
-                  <div key={i} className="flex items-center justify-between"><span className="text-xs font-semibold text-gray-300">{item.name}</span><span className="text-xs font-black text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-lg tabular-nums">{item.current_streak}🔥</span></div>
-                ))}
+              <div className="bg-[#0b0c13]/50 border border-white/[0.04] rounded-2xl p-4 space-y-3 shadow-lg shadow-black/30">
+                <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 flex items-center gap-2 border-b border-white/[0.04] pb-2">
+                  <span className="w-3.5 h-3.5 text-rose-400"><I.Flame /></span> Hot Streaks
+                </p>
+                <div className="space-y-2.5 pt-1">
+                  {streaks.filter(s => s.current_streak > 0).sort((a,b) => b.current_streak - a.current_streak).slice(0,4).map((item, i) => {
+                    const u = leaderboard.find(user => user.name === item.name);
+                    return (
+                      <div key={i} className="flex items-center justify-between bg-white/[0.01] hover:bg-white/[0.03] border border-white/[0.02] hover:border-white/[0.05] rounded-xl p-2 transition-all duration-200">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Avatar src={u?.pfp_path} name={item.name} size="xs" />
+                          <span className="text-xs font-bold text-gray-300 truncate">{item.name}</span>
+                        </div>
+                        <span className="text-[10px] font-black text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2.5 py-0.5 rounded-lg select-none">
+                          {item.current_streak}🔥
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
+
             <div className="xl:hidden grid grid-cols-2 gap-3">
-              {myRank > 0 && <div className="bg-white/[0.02] border border-white/[0.05] rounded-xl p-3 text-center"><p className="text-[9px] text-gray-500 font-black uppercase tracking-widest">Rank</p><p className="text-xl font-black text-emerald-400 font-mono mt-0.5">#{myRank}</p></div>}
-              <div className="bg-white/[0.02] border border-white/[0.05] rounded-xl p-3 text-center"><p className="text-[9px] text-gray-500 font-black uppercase tracking-widest">Points</p><p className="text-xl font-black text-emerald-400 font-mono mt-0.5">{myPts}</p></div>
+              {myRank > 0 && (
+                <div className="bg-[#0b0c13]/50 border border-white/[0.04] rounded-xl p-3 text-center shadow">
+                  <p className="text-[9px] text-gray-500 font-black uppercase tracking-widest">Rank</p>
+                  <p className="text-xl font-black text-red-400 font-mono mt-0.5">#{myRank}</p>
+                </div>
+              )}
+              <div className="bg-[#0b0c13]/50 border border-white/[0.04] rounded-xl p-3 text-center shadow">
+                <p className="text-[9px] text-gray-500 font-black uppercase tracking-widest">Points</p>
+                <p className="text-xl font-black text-red-400 font-mono mt-0.5">{myPts}</p>
+              </div>
             </div>
           </div>
         </aside>
@@ -570,17 +756,14 @@ export default function DesktopDashboard() {
           {/* Tab bar */}
           <div className="shrink-0 border-b border-white/[0.04] bg-[#08090f]/40 px-4 py-2 flex gap-1 flex-wrap">
             {([
+              { key:"admin",       label:"Admin Panel",                            icon:<I.Settings /> },
               { key:"leaderboard", label:"Standings",                             icon:<I.Trophy /> },
-              { key:"predict",     label:`Predictions (${upcomingMatches.length})`, icon:<I.Calendar /> },
-              { key:"history",     label:`History (${historyMatches.length})`,      icon:<I.Clock /> },
-              { key:"family",      label:`Family (${familyMembers.length})`,        icon:<I.Users /> },
+              { key:"family",      label:`Predictors (${familyMembers.length})`,        icon:<I.Users /> },
               { key:"trophy",      label:"🏆 Hall of Fame",                        icon:<I.Star /> },
-              ...(currentUser.is_admin === 1 ? [{ key:"admin", label:"Admin Panel", icon:<I.Settings /> }] : []),
             ] as { key: string; label: string; icon: React.ReactNode }[]).map(tab => (
               <button key={tab.key} onClick={() => setActiveTab(tab.key as any)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[11px] font-bold tracking-wide transition-all duration-200 border ${activeTab === tab.key ? (tab.key==="admin" ? "bg-amber-500/10 border-amber-500/25 text-amber-400" : tab.key==="trophy" ? "bg-purple-500/10 border-purple-500/25 text-purple-400" : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400") : "border-transparent text-gray-500 hover:text-gray-200 hover:bg-white/[0.03]"}`}>
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[11px] font-bold tracking-wide transition-all duration-200 border ${activeTab === tab.key ? (tab.key==="admin" ? "bg-amber-500/10 border-amber-500/25 text-amber-400" : tab.key==="trophy" ? "bg-purple-500/10 border-purple-500/25 text-purple-400" : "bg-red-500/10 border-red-500/20 text-red-400") : "border-transparent text-gray-500 hover:text-gray-200 hover:bg-white/[0.03]"}`}>
                 <span className="w-3.5 h-3.5">{tab.icon}</span><span>{tab.label}</span>
-                {tab.key==="predict" && hasLiveMatch && <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse" />}
               </button>
             ))}
           </div>
@@ -589,85 +772,102 @@ export default function DesktopDashboard() {
 
             {/* ── STANDINGS ── */}
             {activeTab === "leaderboard" && (
-              <div>
-                <div className="flex items-center justify-between mb-5"><h2 className="text-2xl font-black font-outfit">League <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-400">Rankings</span></h2><span className="text-[10px] text-gray-500 font-bold">{leaderboard.length} predictors</span></div>
-                <div className="bg-[#0c0d14]/50 border border-white/[0.05] rounded-2xl overflow-hidden">
-                  <table className="w-full text-left border-collapse">
-                    <thead><tr className="border-b border-white/[0.04]"><th className="py-3 px-5 text-[9px] font-black uppercase tracking-widest text-gray-500 w-16">Rank</th><th className="py-3 px-5 text-[9px] font-black uppercase tracking-widest text-gray-500">Predictor</th><th className="py-3 px-5 text-[9px] font-black uppercase tracking-widest text-gray-500 text-center">Exact Scores</th><th className="py-3 px-5 text-[9px] font-black uppercase tracking-widest text-gray-500 text-right">Points</th></tr></thead>
-                    <tbody>
-                      {leaderboard.map((user, i) => {
-                        const isSelf = user.id === currentUser.id;
-                        return <tr key={user.id} className={`border-b border-white/[0.02] transition-colors ${isSelf ? "bg-emerald-500/[0.03]" : "hover:bg-white/[0.01]"}`}>
-                          <td className="py-4 px-5"><span className={`font-mono text-sm font-black ${i===0?"text-amber-400":i===1?"text-slate-300":i===2?"text-orange-400":"text-gray-600"}`}>{i===0?"🥇":i===1?"🥈":i===2?"🥉":`#${i+1}`}</span></td>
-                          <td className="py-4 px-5"><div className="flex items-center gap-3"><Avatar src={user.pfp_path} name={user.name} size="sm" /><div><span className={`text-sm font-bold ${isSelf?"text-emerald-400":"text-white"}`}>{user.name}</span>{isSelf && <span className="text-[9px] text-emerald-500 font-black ml-1.5 uppercase">You</span>}</div></div></td>
-                          <td className="py-4 px-5 text-center"><span className="text-xs font-mono text-gray-400">{user.correct_count ?? 0} 🎯</span></td>
-                          <td className="py-4 px-5 text-right"><span className="text-sm font-black font-mono text-emerald-400">{user.points}</span><span className="text-[10px] text-gray-600 ml-1">pts</span></td>
-                        </tr>;
-                      })}
-                      {leaderboard.length === 0 && <tr><td colSpan={4} className="text-center py-12 text-xs text-gray-600">No rankings yet — complete your first match!</td></tr>}
-                    </tbody>
-                  </table>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-2xl font-black font-outfit">League <span className="bg-clip-text text-transparent bg-gradient-to-r from-red-400 to-orange-400">Rankings</span></h2>
+                  <span className="text-[10px] text-gray-500 font-extrabold uppercase tracking-widest">{leaderboard.length} predictors</span>
                 </div>
-              </div>
-            )}
 
-            {/* ── PREDICTIONS ── */}
-            {activeTab === "predict" && (
-              <div>
-                <div className="flex items-center justify-between mb-5"><h2 className="text-2xl font-black font-outfit">Predictions <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-400">Board</span></h2><div className="flex items-center gap-2">{hasLiveMatch && <Badge color="rose">🔴 Live — auto-refreshing</Badge>}<span className="text-[10px] text-gray-500 font-bold">{upcomingMatches.length} matches</span></div></div>
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                  {upcomingMatches.map(m => {
-                    const sel = selectedMatch?.id === m.id; const live = m.team1_score !== null && !m.is_finished;
-                    return <button key={m.id} onClick={() => selectMatch(m)} className={`card text-left transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] ${sel?"border-emerald-500/30 bg-emerald-500/[0.02]":""} ${live?"border-rose-500/20":""}`}>
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex gap-1.5">{live?<Badge color="rose">🔴 Live</Badge>:m.is_finished?<Badge color="gray">Finished</Badge>:<Badge color="emerald">Open</Badge>}<Badge color={m.with_reward?"emerald":"gray"}>{m.with_reward?"💰":"—"}</Badge>{m.is_frozen===1&&<Badge color="cyan">❄️</Badge>}</div>
-                        <span className="text-[10px] text-gray-600">{new Date(m.kickoff_time).toLocaleDateString([],{month:"short",day:"numeric"})} · {new Date(m.kickoff_time).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>
+                <div className="space-y-2">
+                  {/* Table Header */}
+                  <div className="flex items-center text-[9px] font-black uppercase tracking-widest text-gray-500 px-5 py-2">
+                    <span className="w-16">Rank</span>
+                    <span className="flex-1">Predictor</span>
+                    <span className="w-32 text-center">Perfect Scores</span>
+                    <span className="w-24 text-right">Total Points</span>
+                  </div>
+
+                  {leaderboard.map((user, i) => {
+                    const isSelf = user.id === currentUser.id;
+                    const isTop3 = i < 3;
+                    const rankColor = i === 0 ? "from-amber-400 to-yellow-500 text-amber-950" : i === 1 ? "from-slate-300 to-slate-400 text-slate-950" : i === 2 ? "from-orange-400 to-amber-600 text-orange-950" : "bg-white/[0.04] text-gray-400 border border-white/[0.06]";
+                    const rowBorder = isSelf ? "border-red-500/20 bg-red-500/[0.02]" : "border-white/[0.05] bg-[#0c0d14]/40 hover:bg-[#0c0d14]/70 hover:border-white/[0.10]";
+
+                    return (
+                      <div
+                        key={user.id}
+                        onClick={() => openUserHistory(user)}
+                        className={`flex items-center px-5 py-3.5 border rounded-2xl transition-all duration-300 cursor-pointer hover:scale-[1.005] ${rowBorder} shadow-sm group`}
+                      >
+                        {/* Rank Badge */}
+                        <div className="w-16 flex items-center">
+                          {isTop3 ? (
+                            <span className={`w-6 h-6 rounded-full bg-gradient-to-r ${rankColor} font-black text-xs flex items-center justify-center shadow font-mono`}>
+                              {i + 1}
+                            </span>
+                          ) : (
+                            <span className="font-mono text-xs font-black text-gray-500 pl-2">
+                              #{i + 1}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Avatar & Name */}
+                        <div className="flex-1 min-w-0 flex items-center gap-3">
+                          <div className="relative">
+                            <Avatar src={user.pfp_path} name={user.name} size="sm" />
+                            {isSelf && <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 border border-[#05060e]" />}
+                          </div>
+                          <div className="min-w-0">
+                            <span className={`text-sm font-bold block truncate group-hover:text-red-400 transition-colors ${isSelf ? "text-red-400" : "text-white"}`}>
+                              {user.name}
+                            </span>
+                            <span className="text-[10px] text-gray-600 truncate block">@{user.username}</span>
+                          </div>
+                        </div>
+
+                        {/* Perfect Scores */}
+                        <div className="w-32 text-center">
+                          <span className="text-xs font-mono font-bold text-gray-400 bg-white/[0.02] border border-white/[0.04] px-2.5 py-1 rounded-xl select-none">
+                            {user.correct_count ?? 0} 🎯
+                          </span>
+                        </div>
+
+                        {/* Total Points */}
+                        <div className="w-24 text-right flex items-baseline justify-end gap-1">
+                          <span className="text-base font-black font-mono text-red-400 group-hover:text-red-300 transition-colors">
+                            {user.points}
+                          </span>
+                          <span className="text-[9px] text-gray-600 font-bold uppercase tracking-wider">pts</span>
+                        </div>
                       </div>
-                      <div className="flex items-center justify-center gap-6 py-1">
-                        <div className="flex flex-col items-center flex-1 text-center"><span className="text-4xl">{m.team1_flag}</span><span className="text-xs font-bold text-gray-300 mt-2">{m.team1_country}</span></div>
-                        <div className={`shrink-0 font-mono font-black text-base px-4 py-2 rounded-xl border ${m.is_finished?"text-emerald-400 bg-emerald-500/10 border-emerald-500/20":live?"text-rose-400 bg-rose-500/10 border-rose-500/20 animate-pulse":"text-gray-600 bg-white/[0.02] border-white/[0.06]"}`}>{m.is_finished||live?`${m.team1_score} – ${m.team2_score}`:"VS"}</div>
-                        <div className="flex flex-col items-center flex-1 text-center"><span className="text-4xl">{m.team2_flag}</span><span className="text-xs font-bold text-gray-300 mt-2">{m.team2_country}</span></div>
-                      </div>
-                    </button>;
+                    );
                   })}
-                  {upcomingMatches.length === 0 && <div className="col-span-2 flex flex-col items-center justify-center py-16 text-gray-600"><div className="w-12 h-12 mb-3 opacity-30"><I.Calendar /></div><p className="text-sm font-semibold">No upcoming matches</p></div>}
+
+                  {leaderboard.length === 0 && (
+                    <div className="text-center py-16 text-gray-600 bg-white/[0.01] border border-dashed border-white/[0.05] rounded-2xl">
+                      <div className="w-10 h-10 mx-auto mb-3 opacity-30"><I.Trophy /></div>
+                      <p className="text-xs font-semibold">No rankings yet — complete your first match!</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
-            {/* ── HISTORY ── */}
-            {activeTab === "history" && (
-              <div>
-                <div className="flex items-center justify-between mb-5"><h2 className="text-2xl font-black font-outfit">Match <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-400">History</span></h2><span className="text-[10px] text-gray-500 font-bold">{historyMatches.length} completed</span></div>
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                  {historyMatches.map(m => (
-                    <button key={m.id} onClick={() => selectMatch(m)} className={`card text-left hover:scale-[1.01] transition-all duration-200 ${selectedMatch?.id===m.id?"border-emerald-500/20":""}`}>
-                      <div className="flex items-center justify-between mb-4"><Badge color="gray">Finished</Badge><span className="text-[10px] text-gray-600">{new Date(m.kickoff_time).toLocaleDateString([],{month:"short",day:"numeric",year:"numeric"})}</span></div>
-                      <div className="flex items-center justify-center gap-6 py-1">
-                        <div className="flex flex-col items-center flex-1"><span className="text-4xl">{m.team1_flag}</span><span className="text-xs font-bold text-gray-300 mt-2 text-center">{m.team1_country}</span></div>
-                        <div className="shrink-0 font-mono font-black text-xl text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-5 py-2 rounded-2xl">{m.team1_score} – {m.team2_score}</div>
-                        <div className="flex flex-col items-center flex-1"><span className="text-4xl">{m.team2_flag}</span><span className="text-xs font-bold text-gray-300 mt-2 text-center">{m.team2_country}</span></div>
-                      </div>
-                    </button>
-                  ))}
-                  {historyMatches.length === 0 && <div className="col-span-2 flex flex-col items-center justify-center py-16 text-gray-600"><div className="w-12 h-12 mb-3 opacity-30"><I.Clock /></div><p className="text-sm font-semibold">No history yet</p></div>}
-                </div>
-              </div>
-            )}
 
             {/* ── FAMILY ── */}
             {activeTab === "family" && (
               <div>
-                <div className="flex items-center justify-between mb-5"><h2 className="text-2xl font-black font-outfit">Family <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-400">Predictors</span></h2><span className="text-[10px] text-gray-500 font-bold">{familyMembers.length} active</span></div>
+                <div className="flex items-center justify-between mb-5"><h2 className="text-2xl font-black font-outfit">NBR <span className="bg-clip-text text-transparent bg-gradient-to-r from-red-400 to-orange-400">Predictors</span></h2><span className="text-[10px] text-gray-500 font-bold">{familyMembers.length} active</span></div>
                 <div className="grid grid-cols-2 xl:grid-cols-3 gap-3">
                   {familyMembers.map(m => {
                     const rank = leaderboard.findIndex(u => u.id === m.id) + 1; const pts = leaderboard.find(u => u.id === m.id)?.points ?? 0;
-                    return <button key={m.id} onClick={() => openUserHistory(m)} className="card flex items-center gap-4 hover:border-emerald-500/20 transition-all duration-200 text-left hover:scale-[1.01] active:scale-[0.99] group">
+                    return <button key={m.id} onClick={() => openUserHistory(m)} className="card flex items-center gap-4 hover:border-red-500/20 transition-all duration-200 text-left hover:scale-[1.01] active:scale-[0.99] group">
                       <div className="relative shrink-0"><Avatar src={m.pfp_path} name={m.name} size="md" />{rank>0&&<span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#0c0d14] border border-white/10 text-[9px] font-black text-gray-400 flex items-center justify-center">#{rank}</span>}</div>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 flex-wrap"><span className="text-sm font-bold text-white truncate group-hover:text-emerald-400 transition-colors">{m.name}</span>{m.is_admin===1&&<Badge color="amber">Admin</Badge>}</div>
-                        <div className="text-[10px] text-gray-600 truncate mt-0.5">{m.phone}</div>
-                        {rank>0&&<div className="text-[10px] text-emerald-500 font-bold mt-1">{pts} pts</div>}
+                        <div className="flex items-center gap-1.5 flex-wrap"><span className="text-sm font-bold text-white truncate group-hover:text-red-400 transition-colors">{m.name}</span>{m.is_admin===1&&<Badge color="amber">Admin</Badge>}</div>
+                        <div className="text-[10px] text-gray-600 truncate mt-0.5">@{m.username}</div>
+                        {rank>0&&<div className="text-[10px] text-red-500 font-bold mt-1">{pts} pts</div>}
                         <div className="text-[9px] text-gray-600 mt-0.5 group-hover:text-gray-400 transition-colors">Tap to see history →</div>
                       </div>
                     </button>;
@@ -683,7 +883,7 @@ export default function DesktopDashboard() {
                 <div className="text-center mb-10">
                   <div className="text-6xl mb-4 animate-bounce select-none">🏆</div>
                   <h2 className="text-4xl font-black font-outfit bg-clip-text text-transparent bg-gradient-to-r from-amber-300 via-yellow-400 to-orange-400">Hall of Fame</h2>
-                  <p className="text-sm text-gray-500 mt-2">World Cup 2026 · Janahi Family Predictions</p>
+                  <p className="text-sm text-gray-500 mt-2">World Cup 2026 · NBR World Cup Predictions</p>
                   {!tournamentEnded && <Badge color="gray" >Tournament still in progress</Badge>}
                   {tournamentEnded && <Badge color="amber">🎉 Tournament Complete</Badge>}
                 </div>
@@ -708,7 +908,7 @@ export default function DesktopDashboard() {
                       <span className={`font-mono text-lg font-black w-8 text-center shrink-0 ${i===0?"text-amber-400":i===1?"text-slate-300":i===2?"text-orange-400":"text-gray-600"}`}>{i===0?"🥇":i===1?"🥈":i===2?"🥉":`#${i+1}`}</span>
                       <Avatar src={user.pfp_path} name={user.name} size="sm" />
                       <div className="flex-1 min-w-0"><div className="text-sm font-bold text-white">{user.name}</div><div className="text-[10px] text-gray-600">{user.correct_count} exact scores</div></div>
-                      <div className="text-right"><div className="text-lg font-black font-mono text-emerald-400">{user.points}</div><div className="text-[9px] text-gray-600">pts</div></div>
+                      <div className="text-right"><div className="text-lg font-black font-mono text-red-400">{user.points}</div><div className="text-[9px] text-gray-600">pts</div></div>
                     </div>
                   ))}
                 </div>
@@ -719,7 +919,7 @@ export default function DesktopDashboard() {
                   <div className="card border-white/[0.05] text-center"><p className="text-[9px] text-gray-500 font-black uppercase tracking-widest">Total Predictors</p><p className="text-3xl font-black text-white mt-2">{familyMembers.length}</p></div>
                   {topStreak && <div className="card border-white/[0.05] text-center"><p className="text-[9px] text-gray-500 font-black uppercase tracking-widest">Best Streak</p><p className="text-3xl font-black text-rose-400 mt-2">{topStreak.longest_streak}🔥</p><p className="text-[10px] text-gray-600 mt-1">{topStreak.name}</p></div>}
                   {leaderboard[0] && <div className="card border-amber-500/10 text-center"><p className="text-[9px] text-amber-500 font-black uppercase tracking-widest">Most Exact Scores</p><p className="text-3xl font-black text-amber-400 mt-2">{leaderboard[0].correct_count}🎯</p><p className="text-[10px] text-gray-600 mt-1">{leaderboard[0].name}</p></div>}
-                  {leaderboard[leaderboard.length-1] && leaderboard.length > 1 && <div className="card border-white/[0.05] text-center xl:col-span-2"><p className="text-[9px] text-gray-500 font-black uppercase tracking-widest">Everyone played! 🎉</p><p className="text-xs text-gray-500 mt-2">Thanks for participating in the 2026 family predictions!</p></div>}
+                  {leaderboard[leaderboard.length-1] && leaderboard.length > 1 && <div className="card border-white/[0.05] text-center xl:col-span-2"><p className="text-[9px] text-gray-500 font-black uppercase tracking-widest">Everyone played! 🎉</p><p className="text-xs text-gray-500 mt-2">Thanks for participating in the 2026 predictions!</p></div>}
                 </div>
               </div>
             )}
@@ -747,10 +947,12 @@ export default function DesktopDashboard() {
                   {([
                     { key:"predictors",   label:"Users",     icon:<I.Users /> },
                     { key:"matches",      label:"Match Mgr", icon:<I.Calendar /> },
+                    { key:"api_import",   label:"API Sync",  icon:<I.Globe /> },
                     { key:"scores",       label:"Scores",    icon:<I.Trophy /> },
                     { key:"tools",        label:"Tools",     icon:<I.Settings /> },
+                    { key:"settings",     label:"Settings",  icon:<I.Settings /> },
                     { key:"announcement", label:"Notice",    icon:<I.Megaphone /> },
-                    { key:"import",       label:"Importer",  icon:<I.Msg /> },
+                    { key:"import",       label:"Chat Import",  icon:<I.Msg /> },
                   ] as { key: string; label: string; icon: React.ReactNode }[]).map(t => (
                     <button key={t.key} onClick={() => setAdminTab(t.key as any)} className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[10px] font-bold transition-all duration-150 ${adminTab===t.key?"bg-amber-500/10 border border-amber-500/25 text-amber-400":"text-gray-500 hover:text-gray-200 border border-transparent hover:bg-white/[0.03]"}`}>
                       <span className="w-3.5 h-3.5">{t.icon}</span>{t.label}
@@ -763,9 +965,9 @@ export default function DesktopDashboard() {
                   <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
                     <form onSubmit={handleAddUser} className="card border-white/[0.05] space-y-4 h-fit">
                       <h3 className="font-black text-sm text-white font-outfit">Add Predictor</h3>
-                      <div><label className="field-label">Name</label><input type="text" placeholder="e.g. Latifa Janahi" value={newName} onChange={e=>setNewName(e.target.value)} className="input text-xs py-2.5 px-3 bg-[#07080f] border-white/[0.07]" required /></div>
-                      <div><label className="field-label">Phone</label><input type="tel" placeholder="+97339######" value={newPhone} onChange={e=>setNewPhone(e.target.value)} className="input text-xs py-2.5 px-3 bg-[#07080f] border-white/[0.07]" required /></div>
-                      <div><label className="field-label">Photo</label><div className="flex items-center gap-3 bg-[#07080f] border border-white/[0.07] rounded-xl p-3"><Avatar src={newPfpPreview} name={newName||"?"} size="sm" /><input type="file" accept="image/*" id="add-pfp" className="hidden" onChange={e=>{const f=e.target.files?.[0];if(f)openCropper(f,"add");e.target.value="";}} /><label htmlFor="add-pfp" className="cursor-pointer text-[10px] font-bold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 px-2.5 py-1.5 rounded-lg transition-all select-none">Choose Photo</label></div></div>
+                      <div><label className="field-label">Name</label><input type="text" placeholder="e.g. NBR Member" value={newName} onChange={e=>setNewName(e.target.value)} className="input text-xs py-2.5 px-3 bg-[#07080f] border-white/[0.07]" required /></div>
+                      <div><label className="field-label">Username</label><input type="text" placeholder="e.g. john.doe" value={newUsername} onChange={e=>setNewUsername(e.target.value.toLowerCase())} className="input text-xs py-2.5 px-3 bg-[#07080f] border-white/[0.07]" autoCapitalize="none" autoCorrect="off" spellCheck={false} required /></div>
+                      <div><label className="field-label">Photo</label><div className="flex items-center gap-3 bg-[#07080f] border border-white/[0.07] rounded-xl p-3"><Avatar src={newPfpPreview} name={newName||"?"} size="sm" /><input type="file" accept="image/*" id="add-pfp" className="hidden" onChange={e=>{const f=e.target.files?.[0];if(f)openCropper(f,"add");e.target.value="";}} /><label htmlFor="add-pfp" className="cursor-pointer text-[10px] font-bold text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 px-2.5 py-1.5 rounded-lg transition-all select-none">Choose Photo</label></div></div>
                       {addErr && <p className="text-[10px] text-rose-400">⚠️ {addErr}</p>}
                       <button type="submit" disabled={adding} className="btn-primary w-full py-2.5 text-xs font-bold">{adding?"Adding…":"Add Predictor"}</button>
                     </form>
@@ -774,7 +976,7 @@ export default function DesktopDashboard() {
                       <div className="space-y-2 max-h-[440px] overflow-y-auto pr-1">
                         {familyMembers.map(u => (
                           <div key={u.id} className="card py-3 px-4 flex items-center justify-between gap-3 border-white/[0.04] hover:border-white/[0.08] transition-colors">
-                            <div className="flex items-center gap-3 min-w-0"><Avatar src={u.pfp_path} name={u.name} size="sm" /><div className="min-w-0"><div className="flex items-center gap-1.5 flex-wrap"><span className="text-xs font-bold text-white truncate">{u.name}</span>{u.is_admin===1&&<Badge color="amber">Admin</Badge>}</div><span className="text-[10px] text-gray-600">{u.phone}</span></div></div>
+                            <div className="flex items-center gap-3 min-w-0"><Avatar src={u.pfp_path} name={u.name} size="sm" /><div className="min-w-0"><div className="flex items-center gap-1.5 flex-wrap"><span className="text-xs font-bold text-white truncate">{u.name}</span>{u.is_admin===1&&<Badge color="amber">Admin</Badge>}</div><span className="text-[10px] text-gray-600">@{u.username}</span></div></div>
                             <div className="flex gap-1.5 shrink-0">
                               <button onClick={()=>openEditUser(u)} className="flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold rounded-lg bg-white/[0.03] border border-white/[0.08] text-gray-300 hover:text-white hover:bg-white/[0.07] transition-all"><span className="w-3 h-3"><I.Edit /></span> Edit</button>
                               {u.is_admin!==1&&<button onClick={()=>deleteUser(u.id)} className="flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold rounded-lg bg-rose-500/[0.04] border border-rose-500/10 text-rose-500 hover:bg-rose-500/10 transition-all"><span className="w-3 h-3"><I.Trash /></span> Del</button>}
@@ -793,6 +995,7 @@ export default function DesktopDashboard() {
                       <h3 className="font-black text-sm text-white font-outfit">Schedule Match</h3>
                       <div className="grid grid-cols-2 gap-3"><CountrySelector value={mT1} onChange={setMT1} label="Team 1" /><CountrySelector value={mT2} onChange={setMT2} label="Team 2" /></div>
                       <div><label className="field-label">Kickoff Time</label><input type="datetime-local" value={mKick} onChange={e=>setMKick(e.target.value)} className="input text-xs py-2.5 px-3 bg-[#07080f] border-white/[0.07]" required /></div>
+                      <div><label className="field-label">Prediction Opens At</label><input type="datetime-local" value={mOpen} onChange={e=>setMOpen(e.target.value)} className="input text-xs py-2.5 px-3 bg-[#07080f] border-white/[0.07]" /></div>
                       <div><label className="field-label">Prediction Deadline</label><input type="datetime-local" value={mDead} onChange={e=>setMDead(e.target.value)} className="input text-xs py-2.5 px-3 bg-[#07080f] border-white/[0.07]" required /></div>
                       <div><label className="field-label">Reward</label><select value={mRew?"1":"0"} onChange={e=>setMRew(e.target.value==="1")} className="input text-xs py-2.5 px-3 bg-[#07080f] border-white/[0.07]"><option value="1">💰 Cash Reward</option><option value="0">❌ No Reward</option></select></div>
                       {mErr&&<p className="text-[10px] text-rose-400">⚠️ {mErr}</p>}
@@ -803,8 +1006,9 @@ export default function DesktopDashboard() {
                       <div className="space-y-2.5 max-h-[440px] overflow-y-auto pr-1">
                         {upcomingMatches.map(m => (
                           <div key={m.id} className="card border-white/[0.04] p-4 flex items-center justify-between gap-4">
-                            <div className="min-w-0 flex-1"><div className="flex items-center gap-2 flex-wrap"><span className="text-xl">{m.team1_flag}</span><span className="text-xs font-bold text-white">{m.team1_country}</span><span className="text-gray-600 text-xs">vs</span><span className="text-xl">{m.team2_flag}</span><span className="text-xs font-bold text-white">{m.team2_country}</span></div><div className="flex gap-1.5 mt-2 flex-wrap"><Badge color={m.with_reward?"emerald":"gray"}>{m.with_reward?"💰":"—"}</Badge>{m.is_frozen===1&&<Badge color="cyan">❄️ Frozen</Badge>}<span className="text-[9px] text-gray-600 font-mono">🕓 {new Date(m.kickoff_time).toLocaleDateString([],{month:"short",day:"numeric"})} {new Date(m.kickoff_time).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span></div></div>
+                            <div className="min-w-0 flex-1"><div className="flex items-center gap-2 flex-wrap"><span className="text-xl">{m.team1_flag}</span><span className="text-xs font-bold text-white">{m.team1_country}</span><span className="text-gray-600 text-xs">vs</span><span className="text-xl">{m.team2_flag}</span><span className="text-xs font-bold text-white">{m.team2_country}</span></div><div className="flex gap-1.5 mt-2 flex-wrap"><Badge color={m.with_reward?"emerald":"gray"}>{m.with_reward?"💰":"—"}</Badge>{m.is_frozen===1&&<Badge color="cyan">❄️ Frozen</Badge>}{m.is_hidden===1&&<Badge color="rose">👁️ Hidden</Badge>}<span className="text-[9px] text-gray-600 font-mono">🕓 {new Date(m.kickoff_time).toLocaleDateString([],{month:"short",day:"numeric"})} {new Date(m.kickoff_time).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>{m.prediction_open_time&&<span className="text-[9px] text-red-400 font-mono ml-2">🔓 Opens: {new Date(m.prediction_open_time).toLocaleDateString([],{month:"short",day:"numeric"})} {new Date(m.prediction_open_time).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>}</div></div>
                             <div className="flex items-center gap-1.5 shrink-0">
+                              <button onClick={()=>toggleVisibility(m)} className={`flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold rounded-lg border transition-all ${m.is_hidden?"bg-white/[0.03] border-white/[0.08] text-gray-400 hover:text-white":"bg-green-500/10 border-green-500/20 text-green-400 hover:bg-green-500/20"}`}><span className="w-3 h-3">{m.is_hidden?<I.EyeOff/>:<I.Eye/>}</span>{m.is_hidden?"Publish":"Hide"}</button>
                               <button onClick={()=>toggleFreeze(m)} className={`flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold rounded-lg border transition-all ${m.is_frozen?"bg-rose-500/10 border-rose-500/20 text-rose-400":"bg-white/[0.03] border-white/[0.08] text-gray-400 hover:text-white"}`}><span className="w-3 h-3">{m.is_frozen?<I.Unlock/>:<I.Lock/>}</span>{m.is_frozen?"Unfreeze":"Freeze"}</button>
                               <button onClick={()=>openEditMatch(m)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/[0.03] border border-white/[0.08] text-gray-400 hover:text-white hover:bg-white/[0.07] transition-all"><span className="w-3.5 h-3.5"><I.Edit /></span></button>
                               <button onClick={()=>deleteMatch(m.id)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-rose-500/[0.04] border border-rose-500/10 text-rose-600 hover:bg-rose-500/10 transition-all"><span className="w-3.5 h-3.5"><I.Trash /></span></button>
@@ -815,6 +1019,11 @@ export default function DesktopDashboard() {
                       </div>
                     </div>
                   </div>
+                )}
+
+                {/* ─ A2.5: API IMPORT ─ */}
+                {adminTab === "api_import" && (
+                  <ApiMatchManager onMatchAdded={loadAll} />
                 )}
 
                 {/* ─ A3: SCORES ─ */}
@@ -832,7 +1041,7 @@ export default function DesktopDashboard() {
                               <input type="number" min="0" value={scores[m.id]?.s2??"0"} onChange={e=>setScores(p=>({...p,[m.id]:{...p[m.id],s2:e.target.value}}))} className="w-11 h-9 text-center bg-transparent text-white font-mono text-base font-black focus:outline-none" />
                             </div>
                             <button onClick={()=>submitScore(m.id,true)} className="px-3 py-2 text-[10px] font-bold rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/20 transition-all">Live</button>
-                            <button onClick={()=>submitScore(m.id,false)} className="px-3 py-2 text-[10px] font-bold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-all">Finalize ✓</button>
+                            <button onClick={()=>submitScore(m.id,false)} className="px-3 py-2 text-[10px] font-bold rounded-lg bg-red-600 hover:bg-red-500 text-white transition-all">Finalize ✓</button>
                           </div>
                         </div>
                       ))}
@@ -840,8 +1049,8 @@ export default function DesktopDashboard() {
                     </div>
                     {/* Auto result broadcast */}
                     {resultBroadcast && (
-                      <div className="max-w-2xl card border-emerald-500/20 bg-emerald-500/[0.02] space-y-3">
-                        <div className="flex items-center justify-between"><h3 className="font-black text-sm text-emerald-400">📣 Result Broadcast Ready</h3><span className="text-[10px] text-gray-600">{broadcastMatchName}</span></div>
+                      <div className="max-w-2xl card border-red-500/20 bg-red-500/[0.02] space-y-3">
+                        <div className="flex items-center justify-between"><h3 className="font-black text-sm text-red-400">📣 Result Broadcast Ready</h3><span className="text-[10px] text-gray-600">{broadcastMatchName}</span></div>
                         <textarea readOnly value={resultBroadcast} className="w-full h-48 p-3 bg-[#07080f] border border-white/[0.07] rounded-xl text-[11px] font-mono text-gray-300 resize-none focus:outline-none" />
                         <div className="flex gap-3">
                           <button onClick={()=>{navigator.clipboard.writeText(resultBroadcast);setCopyOk(true);setTimeout(()=>setCopyOk(false),2500);}} className={`btn-primary py-2 px-5 text-xs font-bold flex items-center gap-2`}><span className="w-3.5 h-3.5">{copyOk?<I.Check/>:<I.Clipboard/>}</span>{copyOk?"Copied!":"Copy to WhatsApp"}</button>
@@ -870,7 +1079,7 @@ export default function DesktopDashboard() {
                     <div className="card border-white/[0.05] space-y-4 xl:col-span-2">
                       <h3 className="font-black text-sm text-white font-outfit">🔍 Prediction Audit</h3>
                       <div className="space-y-4">
-                        {audit.map((item,i)=><div key={i} className="p-3.5 bg-white/[0.01] border border-white/[0.04] rounded-xl space-y-3"><div className="flex items-center gap-2"><span className="text-base">{item.match.team1_flag}</span><span className="text-xs font-bold text-white">{item.match.team1_country} vs {item.match.team2_country}</span><span className="text-base">{item.match.team2_flag}</span></div><div className="flex flex-wrap gap-2">{item.missing.map(u=>{const msg=encodeURIComponent(`Hey ${u.name}! 👋 Don't forget to predict ${item.match.team1_country} vs ${item.match.team2_country} before the deadline! ⚽`);return<div key={u.id} className="flex items-center gap-2 bg-[#07080f] border border-white/[0.06] pl-2.5 pr-2 py-1 rounded-lg text-[10px]"><span className="text-gray-300 font-semibold">{u.name}</span><a href={`https://wa.me/${u.phone.replace(/\D/g,"")}?text=${msg}`} target="_blank" rel="noopener noreferrer" className="bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 px-2 py-0.5 rounded-md font-bold transition-all">Nudge 💬</a></div>;})} {item.missing.length===0&&<span className="text-[10px] text-emerald-400 font-semibold">🎉 All in!</span>}</div></div>)}
+                        {audit.map((item,i)=><div key={i} className="p-3.5 bg-white/[0.01] border border-white/[0.04] rounded-xl space-y-3"><div className="flex items-center gap-2"><span className="text-base">{item.match.team1_flag}</span><span className="text-xs font-bold text-white">{item.match.team1_country} vs {item.match.team2_country}</span><span className="text-base">{item.match.team2_flag}</span></div><div className="flex flex-wrap gap-2">{item.missing.map(u=>{const msg=encodeURIComponent(`Hey ${u.name}! 👋 Don't forget to predict ${item.match.team1_country} vs ${item.match.team2_country} before the deadline! ⚽`);return<div key={u.id} className="flex items-center gap-2 bg-[#07080f] border border-white/[0.06] pl-2.5 pr-2 py-1 rounded-lg text-[10px]"><span className="text-gray-300 font-semibold">{u.name}</span><button onClick={()=>navigator.clipboard?.writeText(decodeURIComponent(msg))} className="bg-red-500/15 hover:bg-red-500/25 text-red-400 px-2 py-0.5 rounded-md font-bold transition-all">Nudge 💬</button></div>;})} {item.missing.length===0&&<span className="text-[10px] text-red-400 font-semibold">🎉 All in!</span>}</div></div>)}
                         {audit.length===0&&<p className="text-[10px] text-gray-600 text-center py-4">No open matches to audit.</p>}
                       </div>
                     </div>
@@ -882,14 +1091,46 @@ export default function DesktopDashboard() {
                   </div>
                 )}
 
-                {/* ─ A5: ANNOUNCEMENT ─ */}
+                {/* ─ A5: ANNOUNCEMENT & PUSH ─ */}
                 {adminTab === "announcement" && (
-                  <form onSubmit={handleAnn} className="card border-white/[0.05] max-w-lg space-y-4">
-                    <h3 className="font-black text-sm text-white font-outfit">Pin Announcement Banner</h3>
-                    <p className="text-[10px] text-gray-600 leading-relaxed">Appears as a pinned banner for all users. Leave blank to clear it.</p>
-                    <textarea placeholder="e.g. Results will be registered after 9pm…" value={annInput} onChange={e=>setAnnInput(e.target.value)} rows={5} className="input text-xs p-3 bg-[#07080f] border-white/[0.07] resize-none" />
-                    <button type="submit" disabled={annSaving} className="btn-primary w-full py-2.5 text-xs font-bold flex items-center justify-center gap-2"><span className="w-4 h-4"><I.Megaphone /></span>{annSaving?"Pinning…":"Pin Announcement"}</button>
-                  </form>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-4xl">
+                    {/* Pin Banner */}
+                    <form onSubmit={handleAnn} className="card border-white/[0.05] space-y-4 h-fit">
+                      <h3 className="font-black text-sm text-white font-outfit">📌 Pin Announcement Banner</h3>
+                      <p className="text-[10px] text-gray-600 leading-relaxed">Appears as a pinned banner at the top of the app for all users. Leave blank to clear.</p>
+                      <textarea placeholder="e.g. Predictions lock in 1 hour!" value={annInput} onChange={e=>setAnnInput(e.target.value)} rows={5} className="input text-xs p-3 bg-[#07080f] border-white/[0.07] resize-none" />
+                      <button type="submit" disabled={annSaving} className="btn-primary w-full py-2.5 text-xs font-bold flex items-center justify-center gap-2"><span className="w-4 h-4"><I.Megaphone /></span>{annSaving?"Pinning…":"Pin Announcement"}</button>
+                    </form>
+
+                    {/* Broadcast Push */}
+                    <form onSubmit={handlePushBroadcast} className="card border-white/[0.05] space-y-4 h-fit">
+                      <h3 className="font-black text-sm text-white font-outfit">🔔 Broadcast Push Notification</h3>
+                      <p className="text-[10px] text-gray-600 leading-relaxed">Sends a native push notification directly to all predictors' devices, even if their browser is closed.</p>
+                      
+                      <div>
+                        <label className="field-label">Title</label>
+                        <input type="text" placeholder="e.g. ⚽ Next match starts soon!" value={pushTitle} onChange={e=>setPushTitle(e.target.value)} className="input text-xs py-2.5 px-3 bg-[#07080f] border-white/[0.07]" required />
+                      </div>
+
+                      <div>
+                        <label className="field-label">Message Body</label>
+                        <textarea placeholder="e.g. Submit your score predictions now before locking!" value={pushBody} onChange={e=>setPushBody(e.target.value)} rows={2} className="input text-xs p-3 bg-[#07080f] border-white/[0.07] resize-none" required />
+                      </div>
+
+                      <div>
+                        <label className="field-label">Redirect Link (optional)</label>
+                        <input type="text" placeholder="e.g. /leaderboard" value={pushUrl} onChange={e=>setPushUrl(e.target.value)} className="input text-xs py-2.5 px-3 bg-[#07080f] border-white/[0.07]" />
+                      </div>
+
+                      {pushFeedback && (
+                        <div className={`text-[10px] font-bold p-2.5 rounded-xl border ${pushFeedback.startsWith("❌")?"bg-rose-500/10 border-rose-500/20 text-rose-400":"bg-red-500/10 border-red-500/20 text-red-400"}`}>
+                          {pushFeedback}
+                        </div>
+                      )}
+
+                      <button type="submit" disabled={pushSending} className="btn-primary w-full py-2.5 text-xs font-bold flex items-center justify-center gap-2"><span className="w-4 h-4"><I.Megaphone /></span>{pushSending?"Sending…":"Send Push Notification"}</button>
+                    </form>
+                  </div>
                 )}
 
                 {/* ─ A6: IMPORT ─ */}
@@ -898,7 +1139,7 @@ export default function DesktopDashboard() {
                     <form onSubmit={handleImport} className="card border-white/[0.05] space-y-4 h-fit">
                       <h3 className="font-black text-sm text-white font-outfit">Chat Logs Importer</h3>
                       <p className="text-[10px] text-gray-600 leading-relaxed">Upload a WhatsApp .txt export to backfill historical predictions.</p>
-                      <label htmlFor="import-file" className={`flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-200 ${importFile?"border-emerald-500/30 bg-emerald-500/[0.03]":"border-white/[0.08] hover:border-white/20"}`}>
+                      <label htmlFor="import-file" className={`flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-200 ${importFile?"border-red-500/30 bg-red-500/[0.03]":"border-white/[0.08] hover:border-white/20"}`}>
                         <div className="w-10 h-10 text-gray-600 mb-3"><I.Upload /></div>
                         <p className="text-xs font-semibold text-gray-400">{importFile?importFile.name:"Click to select .txt file"}</p>
                         <p className="text-[9px] text-gray-600 mt-1">WhatsApp exported chat log</p>
@@ -913,80 +1154,140 @@ export default function DesktopDashboard() {
                     </div>
                   </div>
                 )}
+
+                {/* ─ A7: SETTINGS ─ */}
+                {adminTab === "settings" && (
+                  <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h3 className="font-black text-sm text-white font-outfit">Scoring Config</h3>
+                        <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mt-0.5">Global Rules</p>
+                      </div>
+                    </div>
+                    
+                    <form onSubmit={saveAdminSettings} className="card p-5 bg-[#0c0d14]/70 border-white/[0.05] shadow-lg shadow-black/20">
+                      <div className="space-y-4">
+                        <div>
+                          <label className="field-label">Points for FIRST Correct Predictor</label>
+                          <input
+                            type="number"
+                            value={adminFirstPts}
+                            onChange={(e) => setAdminFirstPts(Number(e.target.value))}
+                            className="input bg-[#0c0d14] text-white"
+                            min={0}
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="field-label">Points for OTHER Correct Predictors</label>
+                          <input
+                            type="number"
+                            value={adminOtherPts}
+                            onChange={(e) => setAdminOtherPts(Number(e.target.value))}
+                            className="input bg-[#0c0d14] text-white"
+                            min={0}
+                            required
+                          />
+                        </div>
+                        <button type="submit" disabled={adminSavingPts} className="btn-primary w-full py-3 text-xs flex items-center justify-center gap-2">
+                          {adminSavingPts ? <Spinner /> : "Save Settings"}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
               </div>
             )}
           </div>
         </main>
 
         {/* ══ RIGHT PANEL ══ */}
-        <section className="w-[380px] xl:w-[420px] shrink-0 border-l border-white/[0.04] flex flex-col overflow-hidden">
+        <section className="w-[380px] xl:w-[420px] shrink-0 border-l border-white/[0.04] flex flex-col overflow-hidden bg-[#07080e]/20 backdrop-blur-md">
           {selectedMatch ? (
-            <div className="flex-1 overflow-y-auto p-5 space-y-4">
+            <div className="flex-1 overflow-y-auto p-5 space-y-5 scrollbar-thin">
               {/* Match header */}
-              <div className="bg-[#0c0d14]/60 border border-white/[0.06] rounded-2xl p-5 relative overflow-hidden">
-                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-                <div className="flex items-center gap-2 mb-5 flex-wrap">
-                  {selectedMatch.is_finished===1?<Badge color="gray">Finished</Badge>:isLive?<Badge color="rose">🔴 Live</Badge>:selectedMatch.is_frozen===1?<Badge color="cyan">❄️ Frozen</Badge>:<Badge color="emerald">{countdown||"Active"}</Badge>}
-                  <Badge color={selectedMatch.with_reward?"emerald":"gray"}>{selectedMatch.with_reward?"💰 Reward":"—"}</Badge>
-                  {hasLiveMatch && !selectedMatch.is_finished && <span className="text-[9px] text-gray-600">Auto-refresh: 30s</span>}
+              <div className="bg-[#0c0d14]/70 border border-white/[0.06] rounded-3xl p-6 relative overflow-hidden shadow-lg shadow-black/40">
+                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+                <div className="flex items-center gap-2 mb-6 flex-wrap">
+                  {selectedMatch.is_finished === 1 ? (
+                    <Badge color="gray">Finished</Badge>
+                  ) : isLive ? (
+                    <Badge color="rose">🔴 Live</Badge>
+                  ) : selectedMatch.is_frozen === 1 ? (
+                    <Badge color="cyan">❄️ Frozen</Badge>
+                  ) : (
+                    <span className="text-[10px] bg-red-500/10 border border-red-500/20 text-red-400 font-black uppercase px-2.5 py-1 rounded-full animate-pulse tracking-wider">
+                      🕓 {countdown || "Open"}
+                    </span>
+                  )}
+                  {selectedMatch.with_reward === 1 && <Badge color="amber">💰 Double Points</Badge>}
                 </div>
-                <div className="flex items-center justify-center gap-4">
-                  <div className="flex flex-col items-center flex-1 text-center"><span className="text-5xl mb-2">{selectedMatch.team1_flag}</span><span className="text-sm font-black text-white font-outfit">{selectedMatch.team1_country}</span></div>
-                  <div className={`shrink-0 px-5 py-2.5 rounded-2xl border font-mono font-black text-xl ${selectedMatch.is_finished===1?"text-emerald-400 bg-emerald-500/10 border-emerald-500/20":isLive?"text-rose-400 bg-rose-500/10 border-rose-500/20 animate-pulse":"text-gray-600 bg-white/[0.02] border-white/[0.06]"}`}>{isLive||selectedMatch.is_finished===1?`${selectedMatch.team1_score} – ${selectedMatch.team2_score}`:"VS"}</div>
-                  <div className="flex flex-col items-center flex-1 text-center"><span className="text-5xl mb-2">{selectedMatch.team2_flag}</span><span className="text-sm font-black text-white font-outfit">{selectedMatch.team2_country}</span></div>
+                
+                <div className="flex items-center justify-between gap-2.5">
+                  <div className="flex flex-col items-center flex-1 text-center min-w-0">
+                    <div className="w-16 h-16 bg-white/[0.02] border border-white/[0.05] rounded-full flex items-center justify-center shadow-inner filter drop-shadow-[0_4px_10px_rgba(0,0,0,0.4)]">
+                      <span className="text-4xl select-none">{selectedMatch.team1_flag}</span>
+                    </div>
+                    <span className="text-sm font-black text-white font-outfit mt-3 truncate w-full">{selectedMatch.team1_country}</span>
+                  </div>
+                  
+                  <div className={`shrink-0 px-5 py-3 rounded-2xl border font-mono font-black text-2xl flex items-center justify-center min-w-[80px] shadow-sm ${selectedMatch.is_finished === 1 ? "text-red-400 bg-red-500/10 border-red-500/20" : isLive ? "text-rose-400 bg-rose-500/10 border-rose-500/20 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.1)]" : "text-gray-600 bg-white/[0.02] border-white/[0.05]"}`}>
+                    {isLive || selectedMatch.is_finished === 1 ? `${selectedMatch.team1_score} – ${selectedMatch.team2_score}` : "VS"}
+                  </div>
+                  
+                  <div className="flex flex-col items-center flex-1 text-center min-w-0">
+                    <div className="w-16 h-16 bg-white/[0.02] border border-white/[0.05] rounded-full flex items-center justify-center shadow-inner filter drop-shadow-[0_4px_10px_rgba(0,0,0,0.4)]">
+                      <span className="text-4xl select-none">{selectedMatch.team2_flag}</span>
+                    </div>
+                    <span className="text-sm font-black text-white font-outfit mt-3 truncate w-full">{selectedMatch.team2_country}</span>
+                  </div>
                 </div>
-                {selectedMatch.is_finished===1&&<p className="text-center text-[10px] text-gray-600 font-bold uppercase tracking-wider mt-4">Final Score</p>}
               </div>
 
-              {/* Prediction form */}
-              {!isLocked ? (
-                <form onSubmit={handlePredSubmit} className="bg-[#0c0d14]/60 border border-white/[0.06] rounded-2xl p-5 space-y-4">
-                  <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-500 text-center">Your Prediction</h3>
-                  {userPrediction&&<p className="text-center text-[10px] text-gray-600">Current: <span className="text-emerald-400 font-bold">{userPrediction.team1_score} – {userPrediction.team2_score}</span></p>}
-                  <div className="flex items-center justify-center gap-3">
-                    {[{val:predScore1,set:setPredScore1},{val:predScore2,set:setPredScore2}].map((side,si)=>(
-                      <div key={si} className="flex items-center gap-2">
-                        {si===1&&<span className="text-gray-600 font-bold text-lg">–</span>}
-                        <div className="flex items-center gap-1.5 bg-white/[0.03] border border-white/[0.06] p-1.5 rounded-2xl">
-                          <button type="button" onClick={()=>side.set(s=>String(Math.max(0,+s-1)))} className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/[0.04] hover:bg-white/[0.09] text-white font-bold text-base transition-colors">−</button>
-                          <input type="number" min="0" value={side.val} onChange={e=>side.set(e.target.value)} className="w-12 bg-transparent text-center font-mono text-3xl font-black text-white focus:outline-none p-0 border-0 tabular-nums" />
-                          <button type="button" onClick={()=>side.set(s=>String(+s+1))} className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/[0.04] hover:bg-white/[0.09] text-white font-bold text-base transition-colors">+</button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  {predError&&<div className="flex items-center gap-2 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[10px] px-3 py-2 rounded-xl"><div className="w-3.5 h-3.5"><I.Info /></div>{predError}</div>}
-                  <button type="submit" disabled={savingPred} className="btn-primary w-full py-3 text-xs font-bold flex items-center justify-center gap-2">{savingPred?<><Spinner/><span>Saving…</span></>:"Save Prediction"}</button>
-                </form>
-              ) : (
-                <div className="bg-[#0c0d14]/60 border border-white/[0.06] rounded-2xl p-6 text-center">
-                  <div className="w-10 h-10 mx-auto text-gray-600 mb-3"><I.Lock /></div>
-                  <p className="text-xs font-bold text-gray-500">Predictions locked</p>
-                  {userPrediction&&<p className="text-[10px] text-gray-600 mt-1">Your pick: <span className="text-gray-400 font-bold">{userPrediction.team1_score} – {userPrediction.team2_score}</span></p>}
-                </div>
-              )}
 
               {/* Predictions list */}
-              <div className="bg-[#0c0d14]/60 border border-white/[0.06] rounded-2xl p-5 space-y-3">
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-500">Family Predictions ({selectedPredictions.length})</h3>
-                <div className="space-y-2">
+              <div className="bg-[#0c0d14]/70 border border-white/[0.06] rounded-3xl p-5 space-y-4 shadow-lg shadow-black/30">
+                <div className="flex items-center justify-between border-b border-white/[0.03] pb-2.5">
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-500">Predictors' Pick Feed</h3>
+                  <span className="text-[9px] bg-white/[0.04] border border-white/[0.08] px-2 py-0.5 rounded-lg text-gray-500 font-mono font-bold select-none">{selectedPredictions.length} submitted</span>
+                </div>
+                
+                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1 scrollbar-thin">
                   {selectedPredictions.map(p => {
-                    const correct = selectedMatch.is_finished===1&&p.team1_score===selectedMatch.team1_score&&p.team2_score===selectedMatch.team2_score;
-                    const leading = isLive&&p.team1_score===selectedMatch.team1_score&&p.team2_score===selectedMatch.team2_score;
-                    return <div key={p.id} className={`flex items-center justify-between p-2.5 rounded-xl border transition-all ${correct?"bg-emerald-500/[0.04] border-emerald-500/20":leading?"bg-rose-500/[0.04] border-rose-500/20 animate-pulse":"bg-white/[0.01] border-white/[0.04]"}`}>
-                      <div className="flex items-center gap-2.5 min-w-0"><Avatar src={p.pfp_path} name={p.name} size="xs" /><span className="text-xs font-bold text-gray-300 truncate">{p.name}</span>{leading&&<Badge color="rose">🎯 Leading</Badge>}{correct&&<Badge color="emerald">✓ Exact</Badge>}</div>
-                      <span className={`font-mono text-xs font-black px-2.5 py-1 rounded-lg border shrink-0 ml-2 ${correct?"text-emerald-400 bg-emerald-500/10 border-emerald-500/20":leading?"text-rose-400 bg-rose-500/10 border-rose-500/20":"text-gray-500 bg-white/[0.02] border-white/[0.05]"}`}>{p.team1_score} – {p.team2_score}</span>
-                    </div>;
+                    const correct = selectedMatch.is_finished === 1 && p.team1_score === selectedMatch.team1_score && p.team2_score === selectedMatch.team2_score;
+                    const leading = isLive && p.team1_score === selectedMatch.team1_score && p.team2_score === selectedMatch.team2_score;
+                    
+                    const rowBorder = correct 
+                      ? "bg-amber-500/[0.03] border-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.05)]" 
+                      : leading 
+                        ? "bg-rose-500/[0.03] border-rose-500/20 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.05)]" 
+                        : "bg-white/[0.01] border-white/[0.03]";
+
+                    return (
+                      <div key={p.id} className={`flex items-center justify-between p-2.5 rounded-2xl border transition-all duration-200 ${rowBorder}`}>
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <Avatar src={p.pfp_path} name={p.name} size="xs" />
+                          <span className="text-xs font-bold text-gray-300 truncate">{p.name}</span>
+                          {leading && <span className="text-[8px] bg-rose-500/10 border border-rose-500/20 text-rose-400 font-extrabold uppercase px-1.5 py-0.5 rounded">Leading</span>}
+                          {correct && <span className="text-[8px] bg-amber-500/10 border border-amber-500/20 text-amber-400 font-extrabold uppercase px-1.5 py-0.5 rounded">Exact</span>}
+                        </div>
+                        <span className={`font-mono text-xs font-black px-2.5 py-1 rounded-xl border shrink-0 ml-2 ${correct ? "text-amber-400 bg-amber-500/10 border-amber-500/25" : leading ? "text-rose-400 bg-rose-500/10 border-rose-500/25" : "text-gray-500 bg-[#07080d] border-white/[0.05]"}`}>
+                          {p.team1_score} – {p.team2_score}
+                        </span>
+                      </div>
+                    );
                   })}
-                  {selectedPredictions.length===0&&<p className="text-[10px] text-gray-600 text-center py-4">No predictions yet.</p>}
+                  {selectedPredictions.length === 0 && (
+                    <p className="text-[10px] text-gray-600 text-center py-6 font-medium">No predictions submitted yet.</p>
+                  )}
                 </div>
               </div>
             </div>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-center p-8 text-gray-700">
-              <div className="w-16 h-16 mb-4 opacity-20"><I.Calendar /></div>
-              <p className="text-sm font-bold">Select a match</p>
-              <p className="text-[11px] mt-1 leading-relaxed">Click any match card to see predictions and submit your pick.</p>
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-8 text-gray-700 select-none bg-[#07080e]/10">
+              <div className="w-14 h-14 mb-4 opacity-15"><I.Calendar /></div>
+              <p className="text-xs font-black uppercase tracking-wider text-gray-500">Select a Match</p>
+              <p className="text-[10px] text-gray-600 mt-1.5 max-w-xs leading-relaxed">Choose a match from the board to view score predictions, submissions feed, and enter your predictions.</p>
             </div>
           )}
         </section>
@@ -1024,16 +1325,16 @@ export default function DesktopDashboard() {
 
       {/* Self profile */}
       {showProfile && (
-        <Modal title="Edit Your Profile" subtitle="Update name, phone, or photo" onClose={()=>setShowProfile(false)}>
+        <Modal title="Edit Your Profile" subtitle="Update name or photo" onClose={()=>setShowProfile(false)}>
           {profError&&<ErrBanner>{profError}</ErrBanner>}
           <form onSubmit={handleProfileSubmit} className="space-y-4">
             <div className="flex flex-col items-center gap-3 pb-2">
-              <div className="relative"><div className="absolute -inset-1.5 rounded-full bg-gradient-to-tr from-emerald-500/20 to-teal-500/20 blur-md" /><Avatar src={profPreview||currentUser.pfp_path} name={profName||currentUser.name} size="lg" className="relative" /></div>
+              <div className="relative"><div className="absolute -inset-1.5 rounded-full bg-gradient-to-tr from-red-500/20 to-orange-500/20 blur-md" /><Avatar src={profPreview||currentUser.pfp_path} name={profName||currentUser.name} size="lg" className="relative" /></div>
               <input type="file" accept="image/*" id="self-pfp" className="hidden" onChange={e=>{const f=e.target.files?.[0];if(f)openCropper(f,"self");e.target.value="";}} />
-              <label htmlFor="self-pfp" className="cursor-pointer text-[10px] font-bold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 px-3 py-1.5 rounded-xl transition-all select-none">Change Photo</label>
+              <label htmlFor="self-pfp" className="cursor-pointer text-[10px] font-bold text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 px-3 py-1.5 rounded-xl transition-all select-none">Change Photo</label>
             </div>
             <div><label className="field-label">Name</label><input type="text" value={profName} onChange={e=>setProfName(e.target.value)} className="input text-xs py-2.5 px-3 bg-[#07080f] border-white/[0.07]" required /></div>
-            <div><label className="field-label">Phone</label><input type="tel" value={profPhone} onChange={e=>setProfPhone(e.target.value)} className="input text-xs py-2.5 px-3 bg-[#07080f] border-white/[0.07]" required /></div>
+            <div><label className="field-label">Username (read-only)</label><div className="input text-xs py-2.5 px-3 bg-[#07080f] border-white/[0.07] text-gray-400">@{currentUser?.username}</div></div>
             <ModalActions onCancel={()=>setShowProfile(false)} loading={savingProf} label="Save Changes" />
           </form>
         </Modal>
@@ -1048,12 +1349,20 @@ export default function DesktopDashboard() {
               <div className="relative"><div className="absolute -inset-1.5 rounded-full bg-gradient-to-tr from-amber-500/20 to-orange-500/20 blur-md" /><Avatar src={editDelPfp?null:(editPfpPreview||editUser.pfp_path)} name={editName||editUser.name} size="lg" className="relative" /></div>
               <div className="flex gap-2">
                 <input type="file" accept="image/*" id="edit-pfp" className="hidden" onChange={e=>{const f=e.target.files?.[0];if(f)openCropper(f,"edit");e.target.value="";}} />
-                <label htmlFor="edit-pfp" className="cursor-pointer text-[10px] font-bold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 px-3 py-1.5 rounded-xl transition-all select-none">Change Photo</label>
+                <label htmlFor="edit-pfp" className="cursor-pointer text-[10px] font-bold text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 px-3 py-1.5 rounded-xl transition-all select-none">Change Photo</label>
                 {(editUser.pfp_path||editPfpPreview)&&!editDelPfp&&<button type="button" onClick={()=>{setEditPfp(null);setEditDelPfp(true);}} className="text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-3 py-1.5 rounded-xl transition-all">Remove Photo</button>}
               </div>
             </div>
             <div><label className="field-label">Name</label><input type="text" value={editName} onChange={e=>setEditName(e.target.value)} className="input text-xs py-2.5 px-3 bg-[#07080f] border-white/[0.07]" required /></div>
-            <div><label className="field-label">Phone</label><input type="tel" value={editPhone} onChange={e=>setEditPhone(e.target.value)} className="input text-xs py-2.5 px-3 bg-[#07080f] border-white/[0.07]" required /></div>
+            <div><label className="field-label">Username (read-only)</label><div className="input text-xs py-2.5 px-3 bg-[#07080f] border-white/[0.07] text-gray-400">@{editUser?.username}</div></div>
+            <div className="flex items-center gap-2 py-1">
+              <input type="checkbox" id="edit-is-admin" checked={editIsAdmin} onChange={e=>setEditIsAdmin(e.target.checked)} className="rounded border-white/[0.08] bg-[#07080f] text-red-500 focus:ring-red-500" />
+              <label htmlFor="edit-is-admin" className="text-xs font-bold text-gray-300 cursor-pointer select-none">Administrator Access</label>
+            </div>
+            <div className="flex items-center gap-2 py-1">
+              <input type="checkbox" id="edit-is-hidden" checked={editIsHidden} onChange={e=>setEditIsHidden(e.target.checked)} className="rounded border-white/[0.08] bg-[#07080f] text-red-500 focus:ring-red-500" />
+              <label htmlFor="edit-is-hidden" className="text-xs font-bold text-gray-300 cursor-pointer select-none">Hide from Public</label>
+            </div>
             <ModalActions onCancel={()=>setEditUser(null)} loading={savingUser} label="Save Changes" />
           </form>
         </Modal>
@@ -1066,6 +1375,7 @@ export default function DesktopDashboard() {
           <form onSubmit={handleEditMatch} className="space-y-4">
             <div className="grid grid-cols-2 gap-3"><CountrySelector value={emT1} onChange={setEmT1} label="Team 1" /><CountrySelector value={emT2} onChange={setEmT2} label="Team 2" /></div>
             <div><label className="field-label">Kickoff Time</label><input type="datetime-local" value={emKick} onChange={e=>setEmKick(e.target.value)} className="input text-xs py-2.5 px-3 bg-[#07080f] border-white/[0.07]" required /></div>
+            <div><label className="field-label">Prediction Opens At</label><input type="datetime-local" value={emOpen} onChange={e=>setEmOpen(e.target.value)} className="input text-xs py-2.5 px-3 bg-[#07080f] border-white/[0.07]" /></div>
             <div><label className="field-label">Prediction Deadline</label><input type="datetime-local" value={emDead} onChange={e=>setEmDead(e.target.value)} className="input text-xs py-2.5 px-3 bg-[#07080f] border-white/[0.07]" required /></div>
             <div className="grid grid-cols-2 gap-3"><div><label className="field-label">Reward</label><select value={emRew?"1":"0"} onChange={e=>setEmRew(e.target.value==="1")} className="input text-xs py-2.5 px-3 bg-[#07080f] border-white/[0.07]"><option value="1">💰 Reward</option><option value="0">❌ None</option></select></div><div><label className="field-label">Status</label><select value={emFrz?"1":"0"} onChange={e=>setEmFrz(e.target.value==="1")} className="input text-xs py-2.5 px-3 bg-[#07080f] border-white/[0.07]"><option value="0">🔥 Active</option><option value="1">❄️ Frozen</option></select></div></div>
             <ModalActions onCancel={()=>setEditMatch(null)} loading={emSaving} label="Save Changes" />
@@ -1077,7 +1387,7 @@ export default function DesktopDashboard() {
       {historyUser && (
         <Modal title={`${historyUser.name}'s History`} subtitle={`${userHistory.length} predictions`} onClose={()=>setHistoryUser(null)} wide>
           <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
-            {loadingHistory && <div className="flex justify-center py-8"><div className="w-8 h-8 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" /></div>}
+            {loadingHistory && <div className="flex justify-center py-8"><div className="w-8 h-8 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin" /></div>}
             {!loadingHistory && userHistory.length === 0 && <p className="text-center text-xs text-gray-600 py-8">No predictions found.</p>}
             {userHistory.map((item, i) => {
               const finished = item.is_finished;
@@ -1085,7 +1395,7 @@ export default function DesktopDashboard() {
               const resultText = finished ? `${item.match_team1_score} – ${item.match_team2_score}` : "—";
               const predText = `${item.pred_team1_score} – ${item.pred_team2_score}`;
               return (
-                <div key={i} className={`flex items-center gap-4 p-3.5 rounded-2xl border transition-all ${exact?"bg-emerald-500/[0.04] border-emerald-500/20":finished?"bg-white/[0.01] border-white/[0.04]":"bg-white/[0.01] border-white/[0.04]"}`}>
+                <div key={i} className={`flex items-center gap-4 p-3.5 rounded-2xl border transition-all ${exact?"bg-red-500/[0.04] border-red-500/20":finished?"bg-white/[0.01] border-white/[0.04]":"bg-white/[0.01] border-white/[0.04]"}`}>
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <span className="text-2xl shrink-0">{item.team1_flag}</span>
                     <div className="min-w-0">
@@ -1097,7 +1407,7 @@ export default function DesktopDashboard() {
                   <div className="flex items-center gap-3 shrink-0">
                     <div className="text-right">
                       <div className="text-[9px] text-gray-600 uppercase font-bold mb-0.5">Predicted</div>
-                      <div className={`font-mono text-sm font-black px-2.5 py-1 rounded-lg border ${exact?"text-emerald-400 bg-emerald-500/10 border-emerald-500/20":"text-gray-400 bg-white/[0.02] border-white/[0.06]"}`}>{predText}</div>
+                      <div className={`font-mono text-sm font-black px-2.5 py-1 rounded-lg border ${exact?"text-red-400 bg-red-500/10 border-red-500/20":"text-gray-400 bg-white/[0.02] border-white/[0.06]"}`}>{predText}</div>
                     </div>
                     {finished && (
                       <div className="text-right">
@@ -1115,7 +1425,7 @@ export default function DesktopDashboard() {
           {!loadingHistory && userHistory.length > 0 && (
             <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-white/[0.05]">
               <div className="text-center"><p className="text-[9px] text-gray-600 font-black uppercase">Total</p><p className="text-xl font-black text-white mt-0.5">{userHistory.length}</p></div>
-              <div className="text-center"><p className="text-[9px] text-emerald-500 font-black uppercase">Exact</p><p className="text-xl font-black text-emerald-400 mt-0.5">{userHistory.filter(h=>h.is_exact).length}</p></div>
+              <div className="text-center"><p className="text-[9px] text-red-500 font-black uppercase">Exact</p><p className="text-xl font-black text-red-400 mt-0.5">{userHistory.filter(h=>h.is_exact).length}</p></div>
               <div className="text-center"><p className="text-[9px] text-gray-600 font-black uppercase">Rate</p><p className="text-xl font-black text-white mt-0.5">{userHistory.filter(h=>h.is_finished).length > 0 ? Math.round(userHistory.filter(h=>h.is_exact).length/userHistory.filter(h=>h.is_finished).length*100) : 0}%</p></div>
             </div>
           )}
@@ -1127,11 +1437,11 @@ export default function DesktopDashboard() {
         <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
           <div className="bg-[#0c0d14]/95 border border-white/[0.08] rounded-3xl p-6 max-w-sm w-full flex flex-col items-center gap-5 shadow-2xl">
             <div className="text-center"><h3 className="font-black text-xl text-white font-outfit">Crop Photo</h3><p className="text-xs text-gray-500 mt-1">Drag to position · Slider to zoom</p></div>
-            <div onMouseDown={md} onMouseMove={mm} onMouseUp={()=>setDragging(false)} onMouseLeave={()=>setDragging(false)} onTouchStart={ts} onTouchMove={tm} onTouchEnd={()=>setDragging(false)} className="relative w-60 h-60 overflow-hidden rounded-full border-2 border-emerald-500/30 cursor-move bg-black select-none shadow-[0_0_40px_rgba(16,185,129,0.1)]">
+            <div onMouseDown={md} onMouseMove={mm} onMouseUp={()=>setDragging(false)} onMouseLeave={()=>setDragging(false)} onTouchStart={ts} onTouchMove={tm} onTouchEnd={()=>setDragging(false)} className="relative w-60 h-60 overflow-hidden rounded-full border-2 border-red-500/30 cursor-move bg-black select-none shadow-[0_0_40px_rgba(16,185,129,0.1)]">
               <img src={cropSrc} alt="crop" draggable={false} style={{ transform:`translate(${ox}px,${oy}px) scale(${zoom})`, transition:dragging?"none":"transform 0.1s ease-out" }} className="w-full h-full object-contain pointer-events-none select-none" />
               <div className="absolute inset-0 rounded-full border border-white/10 pointer-events-none" />
             </div>
-            <div className="w-full"><div className="flex justify-between text-[10px] text-gray-600 font-bold uppercase mb-2"><span>Zoom</span><span>{Math.round(zoom*100)}%</span></div><input type="range" min="1" max="3" step="0.01" value={zoom} onChange={e=>setZoom(+e.target.value)} className="w-full accent-emerald-500 cursor-pointer" /></div>
+            <div className="w-full"><div className="flex justify-between text-[10px] text-gray-600 font-bold uppercase mb-2"><span>Zoom</span><span>{Math.round(zoom*100)}%</span></div><input type="range" min="1" max="3" step="0.01" value={zoom} onChange={e=>setZoom(+e.target.value)} className="w-full accent-red-500 cursor-pointer" /></div>
             <div className="flex gap-3 w-full"><button onClick={()=>setCropSrc(null)} className="btn-secondary flex-1 py-2.5 text-xs font-bold">Cancel</button><button onClick={cropConfirm} className="btn-primary flex-1 py-2.5 text-xs font-bold">Crop & Apply</button></div>
           </div>
         </div>
