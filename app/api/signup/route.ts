@@ -7,10 +7,15 @@ export async function POST(request: NextRequest) {
   const formData = await request.formData();
   const name = (formData.get("name") as string)?.trim();
   const username = (formData.get("username") as string)?.trim().toLowerCase();
+  const pin = (formData.get("pin") as string)?.trim();
   const pfp = formData.get("pfp") as File | null;
 
-  if (!name || !username) {
-    return NextResponse.json({ error: "Name and username are required" }, { status: 400 });
+  if (!name || !username || !pin) {
+    return NextResponse.json({ error: "Name, username, and PIN are required" }, { status: 400 });
+  }
+
+  if (pin.length < 4) {
+    return NextResponse.json({ error: "PIN must be at least 4 digits" }, { status: 400 });
   }
 
   // Validate username
@@ -55,8 +60,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const result = db
-      .prepare("INSERT INTO users (name, username, pfp_path, is_admin) VALUES (?, ?, ?, 0)")
-      .run(name, username, pfpPath);
+      .prepare("INSERT INTO users (name, username, pin, pfp_path, is_admin) VALUES (?, ?, ?, ?, 0)")
+      .run(name, username, pin, pfpPath);
 
     const userId = result.lastInsertRowid as number;
 

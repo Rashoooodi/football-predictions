@@ -8,6 +8,7 @@ export default function LoginPage() {
 
   // Login state
   const [username, setUsername] = useState("");
+  const [pin, setPin] = useState("");
 
   // Signup state
   const [signupName, setSignupName] = useState("");
@@ -116,7 +117,7 @@ export default function LoginPage() {
     const res = await fetch("/api/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: username.trim().toLowerCase() }),
+      body: JSON.stringify({ username: username.trim().toLowerCase(), pin: pin }),
     });
     if (res.ok) {
       const user = await res.json();
@@ -148,6 +149,7 @@ export default function LoginPage() {
     const formData = new FormData();
     formData.append("name", signupName.trim());
     formData.append("username", signupUsername.trim().toLowerCase());
+    formData.append("pin", pin);
     if (signupPfp) formData.append("pfp", signupPfp);
 
     const res = await fetch("/api/signup", { method: "POST", body: formData });
@@ -311,6 +313,30 @@ export default function LoginPage() {
                   </div>
                 </div>
 
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1 ml-1">
+                    PIN Code
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 pointer-events-none">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                    </span>
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      placeholder="e.g. 1234"
+                      value={pin}
+                      onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, ""))}
+                      className="input pl-10 tracking-widest font-mono text-lg placeholder:text-sm placeholder:tracking-normal"
+                      required
+                    />
+                  </div>
+                  <p className="text-[10px] text-gray-500 ml-1 mt-1">If you haven't set a PIN yet, whatever you enter now will be saved as your PIN.</p>
+                </div>
+
                 <button type="submit" disabled={loading} className="btn-primary w-full py-3 flex items-center justify-center gap-2">
                   {loading ? <><Spinner /><span>Logging in...</span></> : <><span>Enter Predictions</span><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg></>}
                 </button>
@@ -394,6 +420,32 @@ export default function LoginPage() {
                     />
                   </div>
                   <p className="text-[10px] text-gray-600 ml-1 mt-1">Lowercase letters, numbers, dots and underscores only. This is how you'll log in.</p>
+                </div>
+
+                {/* PIN */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1 ml-1">
+                    PIN Code <span className="text-rose-400">*</span>
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 pointer-events-none">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                    </span>
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      placeholder="Min 4 digits"
+                      value={pin}
+                      onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, ""))}
+                      className="input pl-10 tracking-widest font-mono text-lg placeholder:text-sm placeholder:tracking-normal"
+                      required
+                      minLength={4}
+                    />
+                  </div>
+                  <p className="text-[10px] text-gray-600 ml-1 mt-1">Your secret PIN code to secure your account.</p>
                 </div>
 
                 <button type="submit" disabled={loading} className="btn-primary w-full py-3 flex items-center justify-center gap-2 !mt-5">
