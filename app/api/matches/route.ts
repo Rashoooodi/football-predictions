@@ -18,8 +18,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  let session;
   try {
-    await requireAdmin();
+    session = await requireAdmin();
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

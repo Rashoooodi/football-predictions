@@ -14,7 +14,7 @@ type Match = {
 };
 type User = {
   id: number; name: string; username: string; pfp_path: string | null;
-  is_admin: number; is_hidden: number; is_banned?: number; points?: number; correct_count?: number; current_streak?: number;
+  is_admin: number; is_hidden: number; is_banned?: number; locked_until?: string | null; failed_attempts?: number; points?: number; correct_count?: number; current_streak?: number;
 };
 type Prediction = {
   id: number; user_id: number; name: string; pfp_path: string | null;
@@ -284,6 +284,33 @@ export default function DesktopDashboard() {
     }, 30000);
     return () => { if (liveRefreshRef.current) clearInterval(liveRefreshRef.current); };
   }, [upcomingMatches, selectedMatch]);
+
+  /* ── Admin Real-Time Sync (Every 3 seconds) ── */
+  useEffect(() => {
+    if (activeTab !== "admin") return;
+    
+    const interval = setInterval(async () => {
+      // Refresh Security Logs
+      if (adminTab === "security") {
+        loadSecurityLogs();
+      }
+      // Refresh Predictors list
+      if (adminTab === "predictors") {
+        const fa = await fetch("/api/family");
+        if (fa.ok) setFamilyMembers(await fa.json());
+      }
+      // Refresh Matches and Scores
+      if (adminTab === "matches" || adminTab === "scores") {
+        const td = await fetch("/api/matches/today");
+        if (td.ok) {
+          const updated: Match[] = await td.json();
+          setUpcomingMatches(updated);
+        }
+      }
+    }, 3000);
+    
+    return () => clearInterval(interval);
+  }, [activeTab, adminTab]);
 
   async function saveAdminSettings(e: React.FormEvent) {
     e.preventDefault();
@@ -1017,7 +1044,7 @@ export default function DesktopDashboard() {
                       <div className="space-y-2 max-h-[440px] overflow-y-auto pr-1">
                         {familyMembers.map(u => (
                           <div key={u.id} className="card py-3 px-4 flex items-center justify-between gap-3 border-white/[0.04] hover:border-white/[0.08] transition-colors">
-                            <div className="flex items-center gap-3 min-w-0"><Avatar src={u.pfp_path} name={u.name} size="sm" /><div className="min-w-0"><div className="flex items-center gap-1.5 flex-wrap"><span className="text-xs font-bold text-white truncate">{u.name}</span>{u.is_admin===1&&<Badge color="amber">Admin</Badge>}{u.is_banned===1&&<Badge color="rose">Banned</Badge>}{u.locked_until && new Date(u.locked_until + "Z") > new Date() && <Badge color="orange">Locked ({u.failed_attempts} fails)</Badge>}</div><span className="text-[10px] text-gray-600">@{u.username}</span></div></div>
+                            <div className="flex items-center gap-3 min-w-0"><Avatar src={u.pfp_path} name={u.name} size="sm" /><div className="min-w-0"><div className="flex items-center gap-1.5 flex-wrap"><span className="text-xs font-bold text-white truncate">{u.name}</span>{u.is_admin===1&&<Badge color="amber">Admin</Badge>}{u.is_banned===1&&<Badge color="rose">Banned</Badge>}{u.locked_until && new Date(u.locked_until + "Z") > new Date() && <Badge color="amber">Locked ({u.failed_attempts} fails)</Badge>}</div><span className="text-[10px] text-gray-600">@{u.username}</span></div></div>
                             <div className="flex gap-1.5 shrink-0">
                               {u.locked_until && new Date(u.locked_until + "Z") > new Date() && <button onClick={()=>unlockUser(u)} className="flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400 hover:bg-orange-500/20 transition-all"><span className="w-3 h-3"><I.Unlock /></span> Unlock</button>}
                               <button onClick={()=>openEditUser(u)} className="flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold rounded-lg bg-white/[0.03] border border-white/[0.08] text-gray-300 hover:text-white hover:bg-white/[0.07] transition-all"><span className="w-3 h-3"><I.Edit /></span> Edit</button>
@@ -1109,8 +1136,14 @@ export default function DesktopDashboard() {
                 {adminTab === "security" && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <h3 className="font-black text-sm text-white font-outfit">Security Logbook</h3>
-                      <button onClick={loadSecurityLogs} className="text-[10px] font-bold text-red-400 hover:text-red-300 transition-colors uppercase tracking-widest">Refresh Logs</button>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-black text-sm text-white font-outfit">Security Logbook</h3>
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                          <span className="text-[8px] font-black uppercase tracking-widest text-emerald-400">Live</span>
+                        </div>
+                      </div>
+                      <button onClick={loadSecurityLogs} className="text-[10px] font-bold text-red-400 hover:text-red-300 transition-colors uppercase tracking-widest">Force Refresh</button>
                     </div>
                     <div className="bg-[#0c0d14]/60 border border-white/[0.05] rounded-2xl overflow-hidden">
                       <div className="max-h-[500px] overflow-y-auto">
