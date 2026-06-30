@@ -23,6 +23,8 @@ export async function PUT(
   }
 
   const body = await request.json();
+  const match = db.prepare("SELECT * FROM matches WHERE id = ?").get(params.id);
+  if (!match) return NextResponse.json({ error: "Match not found" }, { status: 404 });
   const team1_country = body.team1_country;
   const team2_country = body.team2_country;
   const team1_flag = body.team1_flag;
