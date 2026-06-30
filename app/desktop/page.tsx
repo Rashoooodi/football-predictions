@@ -1072,6 +1072,18 @@ export default function DesktopDashboard() {
                       ))}
                       {upcomingMatches.length===0&&<p className="text-xs text-gray-600 py-8 text-center">No active matches.</p>}
                     </div>
+                    
+                    {/* Auto result broadcast */}
+                    {resultBroadcast && (
+                      <div className="max-w-2xl card border-red-500/20 bg-red-500/[0.02] space-y-3">
+                        <div className="flex items-center justify-between"><h3 className="font-black text-sm text-red-400">📣 Result Broadcast Ready</h3><span className="text-[10px] text-gray-600">{broadcastMatchName}</span></div>
+                        <textarea readOnly value={resultBroadcast} className="w-full h-48 p-3 bg-[#07080f] border border-white/[0.07] rounded-xl text-[11px] font-mono text-gray-300 resize-none focus:outline-none" />
+                        <div className="flex gap-3">
+                          <button onClick={()=>{navigator.clipboard.writeText(resultBroadcast);setCopyOk(true);setTimeout(()=>setCopyOk(false),2500);}} className={`btn-primary py-2 px-5 text-xs font-bold flex items-center gap-2`}><span className="w-3.5 h-3.5">{copyOk?<I.Check/>:<I.Clipboard/>}</span>{copyOk?"Copied!":"Copy to WhatsApp"}</button>
+                          <button onClick={()=>setResultBroadcast(null)} className="btn-secondary py-2 px-4 text-xs font-bold">Dismiss</button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1122,19 +1134,6 @@ export default function DesktopDashboard() {
                         )}
                       </div>
                     </div>
-                  </div>
-                )}
-                    {/* Auto result broadcast */}
-                    {resultBroadcast && (
-                      <div className="max-w-2xl card border-red-500/20 bg-red-500/[0.02] space-y-3">
-                        <div className="flex items-center justify-between"><h3 className="font-black text-sm text-red-400">📣 Result Broadcast Ready</h3><span className="text-[10px] text-gray-600">{broadcastMatchName}</span></div>
-                        <textarea readOnly value={resultBroadcast} className="w-full h-48 p-3 bg-[#07080f] border border-white/[0.07] rounded-xl text-[11px] font-mono text-gray-300 resize-none focus:outline-none" />
-                        <div className="flex gap-3">
-                          <button onClick={()=>{navigator.clipboard.writeText(resultBroadcast);setCopyOk(true);setTimeout(()=>setCopyOk(false),2500);}} className={`btn-primary py-2 px-5 text-xs font-bold flex items-center gap-2`}><span className="w-3.5 h-3.5">{copyOk?<I.Check/>:<I.Clipboard/>}</span>{copyOk?"Copied!":"Copy to WhatsApp"}</button>
-                          <button onClick={()=>setResultBroadcast(null)} className="btn-secondary py-2 px-4 text-xs font-bold">Dismiss</button>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 )}
 
