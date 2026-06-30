@@ -50,7 +50,13 @@ export default function RootLayout({
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-500/10 blur-[120px] pointer-events-none -z-10" />
         <div className="absolute top-[30%] right-[-20%] w-[40%] h-[40%] rounded-full bg-orange-500/5 blur-[100px] pointer-events-none -z-10" />
 
-        <main className="pb-32">{children}</main>
+        <main className="pb-32 min-h-[100dvh] flex flex-col">
+          <div className="flex-grow">{children}</div>
+          <footer className="py-8 text-center text-[10px] text-gray-500 font-medium opacity-60">
+            <p>&copy; {new Date().getFullYear()} Team Rashid Works</p>
+            <p className="mt-1">Support: <a href="mailto:him@support.example.com" className="hover:text-white transition-colors">him@support.example.com</a></p>
+          </footer>
+        </main>
         <NavigationBar />
         <InstallBanner />
 
