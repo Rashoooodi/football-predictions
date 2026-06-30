@@ -149,7 +149,7 @@ export default function DesktopDashboard() {
   const [ds, setDs] = useState({ x: 0, y: 0 });
 
   /* Admin sub */
-  const [adminTab, setAdminTab] = useState<"predictors"|"matches"|"scores"|"tools"|"announcement"|"import"|"settings">("predictors");
+  const [adminTab, setAdminTab] = useState<"predictors"|"matches"|"scores"|"tools"|"announcement"|"import"|"api_import"|"settings">("predictors");
 
   /* Admin users */
   const [newName, setNewName] = useState(""); const [newUsername, setNewUsername] = useState(""); const [newPfp, setNewPfp] = useState<File | null>(null); const [newPfpPreview, setNewPfpPreview] = useState<string | null>(null); const [addErr, setAddErr] = useState(""); const [adding, setAdding] = useState(false);
