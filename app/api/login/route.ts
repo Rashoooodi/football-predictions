@@ -2,8 +2,44 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateUsername, createSession, logout } from "@/lib/auth";
 import db from "@/lib/db";
+import crypto from "crypto";
+
+function hashPin(pin: string) {
+  const pepper = process.env.JWT_SECRET || "nbr-secure-pepper";
+  return crypto.createHash("sha256").update(pin + pepper).digest("hex");
+}
+
+// In-memory rate limiter to prevent PIN brute-forcing
+const rateLimitMap = new Map<string, { count: number; lastReset: number }>();
+
+function isRateLimited(ip: string) {
+  const now = Date.now();
+  const windowMs = 15 * 60 * 1000; // 15 minutes
+  const maxRequests = 15; // 15 attempts per 15 minutes
+
+  const record = rateLimitMap.get(ip) || { count: 0, lastReset: now };
+
+  if (now - record.lastReset > windowMs) {
+    record.count = 0;
+    record.lastReset = now;
+  }
+
+  record.count += 1;
+  rateLimitMap.set(ip, record);
+
+  return record.count > maxRequests;
+}
 
 export async function POST(request: NextRequest) {
+  // Rate limiting check
+  const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
+  if (ip !== "unknown" && isRateLimited(ip)) {
+    return NextResponse.json(
+      { error: "Too many login attempts. Please try again in 15 minutes." },
+      { status: 429 }
+    );
+  }
+
   const { username, pin } = await request.json();
 
   if (!username || typeof username !== "string") {
@@ -25,8 +61,13 @@ export async function POST(request: NextRequest) {
     if (!pin) {
       return NextResponse.json({ error: "Please enter your PIN." }, { status: 400 });
     }
-    if (user.pin !== pin) {
+    const hashedAttempt = hashPin(pin);
+    if (user.pin !== hashedAttempt && user.pin !== pin) {
       return NextResponse.json({ error: "Incorrect PIN." }, { status: 401 });
+    }
+    // Auto-upgrade plaintext PINs to hashed
+    if (user.pin === pin) {
+      db.prepare("UPDATE users SET pin = ? WHERE id = ?").run(hashedAttempt, user.id);
     }
   } else {
     // User does NOT have a PIN yet (first time login since update)
@@ -36,7 +77,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     // Save the new PIN
-    db.prepare("UPDATE users SET pin = ? WHERE id = ?").run(pin, user.id);
+    db.prepare("UPDATE users SET pin = ? WHERE id = ?").run(hashPin(pin), user.id);
   }
 
   db.prepare("UPDATE users SET last_login_at = datetime('now') WHERE id = ?").run(user.id);

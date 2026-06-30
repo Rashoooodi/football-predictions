@@ -2,6 +2,12 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { createSession } from "@/lib/auth";
 import db from "@/lib/db";
+import crypto from "crypto";
+
+function hashPin(pin: string) {
+  const pepper = process.env.JWT_SECRET || "nbr-secure-pepper";
+  return crypto.createHash("sha256").update(pin + pepper).digest("hex");
+}
 
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
@@ -61,7 +67,7 @@ export async function POST(request: NextRequest) {
   try {
     const result = db
       .prepare("INSERT INTO users (name, username, pin, pfp_path, is_admin) VALUES (?, ?, ?, ?, 0)")
-      .run(name, username, pin, pfpPath);
+      .run(name, username, hashPin(pin), pfpPath);
 
     const userId = result.lastInsertRowid as number;
 
