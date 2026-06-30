@@ -11,10 +11,12 @@ export async function GET() {
 
   const firstPts = db.prepare("SELECT value FROM settings WHERE key = 'first_correct_points'").get() as any;
   const otherPts = db.prepare("SELECT value FROM settings WHERE key = 'other_correct_points'").get() as any;
+  const banMsg = db.prepare("SELECT value FROM settings WHERE key = 'ban_message'").get() as any;
 
   return NextResponse.json({
     first_correct_points: firstPts ? parseInt(firstPts.value) : 2,
     other_correct_points: otherPts ? parseInt(otherPts.value) : 1,
+    ban_message: banMsg ? banMsg.value : "I thought of this... try again 🙊 can't hack me that easily",
   });
 }
 
@@ -26,13 +28,16 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { first_correct_points, other_correct_points } = body;
+  const { first_correct_points, other_correct_points, ban_message } = body;
 
   if (first_correct_points !== undefined) {
     db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('first_correct_points', ?)").run(String(first_correct_points));
   }
   if (other_correct_points !== undefined) {
     db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('other_correct_points', ?)").run(String(other_correct_points));
+  }
+  if (ban_message !== undefined) {
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('ban_message', ?)").run(String(ban_message));
   }
 
   return NextResponse.json({ success: true });

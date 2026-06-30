@@ -168,6 +168,7 @@ export default function DesktopDashboard() {
   /* Admin settings */
   const [adminFirstPts, setAdminFirstPts] = useState(2);
   const [adminOtherPts, setAdminOtherPts] = useState(1);
+  const [adminBanMessage, setAdminBanMessage] = useState("");
   const [adminSavingPts, setAdminSavingPts] = useState(false);
   const [resultBroadcast, setResultBroadcast] = useState<string | null>(null);
   const [broadcastMatchName, setBroadcastMatchName] = useState("");
@@ -263,6 +264,7 @@ export default function DesktopDashboard() {
       const d = await setRes.json();
       setAdminFirstPts(d.first_correct_points || 2);
       setAdminOtherPts(d.other_correct_points || 1);
+      setAdminBanMessage(d.ban_message || "I thought of this... try again 🙊 can't hack me that easily");
     }
   }
 
@@ -323,7 +325,7 @@ export default function DesktopDashboard() {
     await fetch("/api/admin/settings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ first_correct_points: adminFirstPts, other_correct_points: adminOtherPts })
+      body: JSON.stringify({ first_correct_points: adminFirstPts, other_correct_points: adminOtherPts, ban_message: adminBanMessage })
     });
     setAdminSavingPts(false);
     alert("Settings saved!");
@@ -1384,6 +1386,15 @@ export default function DesktopDashboard() {
                             onChange={(e) => setAdminOtherPts(Number(e.target.value))}
                             className="input bg-[#0c0d14] text-white"
                             min={0}
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="field-label">Custom Ban Message</label>
+                          <textarea
+                            value={adminBanMessage}
+                            onChange={(e) => setAdminBanMessage(e.target.value)}
+                            className="input bg-[#0c0d14] text-white resize-none h-16"
                             required
                           />
                         </div>

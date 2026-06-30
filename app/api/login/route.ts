@@ -36,8 +36,10 @@ export async function POST(request: NextRequest) {
 
   const isIpBanned = db.prepare("SELECT 1 FROM banned_ips WHERE ip = ?").get(ip);
   if (isIpBanned) {
+    const banMsgRow = db.prepare("SELECT value FROM settings WHERE key = 'ban_message'").get() as any;
+    const banMsg = banMsgRow ? banMsgRow.value : "I thought of this... try again 🙊 can't hack me that easily";
     db.prepare("INSERT INTO audit_logs (user_id, action, ip_address, details) VALUES (NULL, 'IP_BLOCKED', ?, 'Connection dropped: Banned IP')").run(ip);
-    return NextResponse.json({ error: "I thought of this... try again 🙊" }, { status: 403 });
+    return NextResponse.json({ error: banMsg }, { status: 403 });
   }
 
   if (ip !== "unknown" && isRateLimited(ip)) {
