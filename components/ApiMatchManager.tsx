@@ -167,17 +167,23 @@ export default function ApiMatchManager({ onMatchAdded }: { onMatchAdded: () => 
         {error && <p className="text-xs text-rose-400">{error}</p>}
         
         <div className="space-y-2.5 max-h-[440px] overflow-y-auto pr-1">
-          {games.filter(g => g.finished !== "TRUE").map((g: any) => (
+          {[...games].filter(g => g.finished !== "TRUE").sort((a, b) => {
+            const da = getLocalTime(a.local_date);
+            const db = getLocalTime(b.local_date);
+            return (da ? da.getTime() : 0) - (db ? db.getTime() : 0);
+          }).map((g: any) => (
             <div key={g._id} className="card border-white/[0.04] p-3 flex items-center justify-between gap-4 hover:bg-white/[0.02] cursor-pointer transition-all" onClick={() => handleSelect(g)}>
               <div>
-                <div className="text-xs font-bold text-white mb-1">
-                  {g.home_team_name_en} vs {g.away_team_name_en}
+                <div className="text-xs font-bold text-white mb-1 flex items-center gap-2">
+                  <span className="text-sm">{matchCountryFlag(g.home_team_name_en)}</span> {g.home_team_name_en} 
+                  <span className="text-gray-500 font-normal">vs</span> 
+                  <span className="text-sm">{matchCountryFlag(g.away_team_name_en)}</span> {g.away_team_name_en}
                 </div>
                 <div className="text-[10px] text-gray-500 font-mono">
                   {displayLocal(g.local_date)} | {g.group}
                 </div>
               </div>
-              <button className="text-[10px] font-bold px-3 py-1.5 rounded bg-white/[0.03] border border-white/[0.08] text-gray-400 hover:text-white transition-all">Select</button>
+              <button className="text-[10px] font-bold px-3 py-1.5 rounded bg-white/[0.03] border border-white/[0.08] text-gray-400 hover:text-white transition-all shrink-0">Select</button>
             </div>
           ))}
           {games.length === 0 && !loading && <p className="text-xs text-gray-600 py-6 text-center">No active API games found.</p>}
