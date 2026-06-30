@@ -77,6 +77,9 @@ export async function POST(request: NextRequest) {
     // Auto login — create session immediately
     await createSession(userId);
 
+    const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
+    db.prepare("INSERT INTO audit_logs (user_id, action, ip_address, details) VALUES (?, 'SIGNUP_SUCCESS', ?, 'User created a new account')").run(userId, ip);
+
     const user = db.prepare("SELECT * FROM users WHERE id = ?").get(userId);
     return NextResponse.json(user);
   } catch (err: any) {

@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
   // Rate limiting check
   const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
   if (ip !== "unknown" && isRateLimited(ip)) {
+    db.prepare("INSERT INTO audit_logs (user_id, action, ip_address, details) VALUES (NULL, 'RATE_LIMIT_HIT', ?, 'Too many login attempts')").run(ip);
     return NextResponse.json(
       { error: "Too many login attempts. Please try again in 15 minutes." },
       { status: 429 }
@@ -46,13 +47,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Username required" }, { status: 400 });
   }
 
-  const user = db.prepare("SELECT id, pin FROM users WHERE username = ?").get(username.trim().toLowerCase()) as { id: number, pin: string | null } | undefined;
+  const user = db.prepare("SELECT id, pin, is_banned FROM users WHERE username = ?").get(username.trim().toLowerCase()) as { id: number, pin: string | null, is_banned: number } | undefined;
 
   if (!user) {
+    db.prepare("INSERT INTO audit_logs (user_id, action, ip_address, details) VALUES (NULL, 'LOGIN_FAILED', ?, ?)").run(ip, `Username not found: ${username}`);
     return NextResponse.json(
       { error: "Username not found. Ask the admin to add you." },
       { status: 404 }
     );
+  }
+
+  if (user.is_banned === 1) {
+    db.prepare("INSERT INTO audit_logs (user_id, action, ip_address, details) VALUES (?, 'LOGIN_BLOCKED', ?, 'Banned user attempted to log in')").run(user.id, ip);
+    return NextResponse.json({ error: "Your account has been permanently disabled by the administrator." }, { status: 403 });
   }
 
   // PIN Logic
@@ -63,6 +70,7 @@ export async function POST(request: NextRequest) {
     }
     const hashedAttempt = hashPin(pin);
     if (user.pin !== hashedAttempt && user.pin !== pin) {
+      db.prepare("INSERT INTO audit_logs (user_id, action, ip_address, details) VALUES (?, 'PIN_FAILED', ?, 'Incorrect PIN attempt')").run(user.id, ip);
       return NextResponse.json({ error: "Incorrect PIN." }, { status: 401 });
     }
     // Auto-upgrade plaintext PINs to hashed
@@ -78,9 +86,11 @@ export async function POST(request: NextRequest) {
     }
     // Save the new PIN
     db.prepare("UPDATE users SET pin = ? WHERE id = ?").run(hashPin(pin), user.id);
+    db.prepare("INSERT INTO audit_logs (user_id, action, ip_address, details) VALUES (?, 'PIN_SET', ?, 'User created their initial PIN')").run(user.id, ip);
   }
 
   db.prepare("UPDATE users SET last_login_at = datetime('now') WHERE id = ?").run(user.id);
+  db.prepare("INSERT INTO audit_logs (user_id, action, ip_address, details) VALUES (?, 'LOGIN_SUCCESS', ?, 'User successfully logged in')").run(user.id, ip);
 
   await createSession(user.id);
 

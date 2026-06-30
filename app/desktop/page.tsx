@@ -149,7 +149,7 @@ export default function DesktopDashboard() {
   const [ds, setDs] = useState({ x: 0, y: 0 });
 
   /* Admin sub */
-  const [adminTab, setAdminTab] = useState<"predictors"|"matches"|"scores"|"tools"|"announcement"|"import"|"api_import"|"settings">("predictors");
+  const [adminTab, setAdminTab] = useState<"predictors"|"matches"|"scores"|"tools"|"announcement"|"import"|"api_import"|"settings"|"security">("predictors");
 
   /* Admin users */
   const [newName, setNewName] = useState(""); const [newUsername, setNewUsername] = useState(""); const [newPfp, setNewPfp] = useState<File | null>(null); const [newPfpPreview, setNewPfpPreview] = useState<string | null>(null); const [addErr, setAddErr] = useState(""); const [adding, setAdding] = useState(false);
@@ -176,6 +176,9 @@ export default function DesktopDashboard() {
   const [broadcastText, setBroadcastText] = useState(""); const [toolsCopied, setToolsCopied] = useState(false);
   const [ledger, setLedger] = useState<LedgerItem[]>([]);
   const [audit, setAudit] = useState<{ match: Match; missing: User[] }[]>([]);
+  
+  /* Admin Security */
+  const [securityLogs, setSecurityLogs] = useState<any[]>([]);
 
   /* Admin misc */
   const [annInput, setAnnInput] = useState(""); const [annSaving, setAnnSaving] = useState(false);
@@ -452,6 +455,26 @@ export default function DesktopDashboard() {
     const res = await fetch(`/api/users/${id}`, { method: "DELETE" }); 
     if (!res.ok) { const d = await res.json(); alert(d.error || "Failed to delete"); }
     await loadAll();
+  }
+  async function toggleBanUser(u: User) {
+    const action = u.is_banned === 1 ? "Unban" : "Ban";
+    if (!confirm(`${action} this predictor?`)) return;
+    const res = await fetch(`/api/admin/users/${u.id}/ban`, { 
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_banned: u.is_banned === 1 ? 0 : 1 })
+    });
+    if (!res.ok) { const d = await res.json(); alert(d.error || "Failed to update ban status"); }
+    await loadAll();
+  }
+  
+  /* ── Admin: Security Logs ── */
+  useEffect(() => {
+    if (activeTab === "admin" && adminTab === "security") loadSecurityLogs();
+  }, [activeTab, adminTab]);
+  async function loadSecurityLogs() {
+    const res = await fetch("/api/admin/audit");
+    if (res.ok) setSecurityLogs(await res.json());
   }
 
   /* ── Admin: Matches ── */
@@ -953,6 +976,7 @@ export default function DesktopDashboard() {
                     { key:"settings",     label:"Settings",  icon:<I.Settings /> },
                     { key:"announcement", label:"Notice",    icon:<I.Megaphone /> },
                     { key:"import",       label:"Chat Import",  icon:<I.Msg /> },
+                    { key:"security",     label:"Security",  icon:<I.Lock /> },
                   ] as { key: string; label: string; icon: React.ReactNode }[]).map(t => (
                     <button key={t.key} onClick={() => setAdminTab(t.key as any)} className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[10px] font-bold transition-all duration-150 ${adminTab===t.key?"bg-amber-500/10 border border-amber-500/25 text-amber-400":"text-gray-500 hover:text-gray-200 border border-transparent hover:bg-white/[0.03]"}`}>
                       <span className="w-3.5 h-3.5">{t.icon}</span>{t.label}
@@ -976,9 +1000,10 @@ export default function DesktopDashboard() {
                       <div className="space-y-2 max-h-[440px] overflow-y-auto pr-1">
                         {familyMembers.map(u => (
                           <div key={u.id} className="card py-3 px-4 flex items-center justify-between gap-3 border-white/[0.04] hover:border-white/[0.08] transition-colors">
-                            <div className="flex items-center gap-3 min-w-0"><Avatar src={u.pfp_path} name={u.name} size="sm" /><div className="min-w-0"><div className="flex items-center gap-1.5 flex-wrap"><span className="text-xs font-bold text-white truncate">{u.name}</span>{u.is_admin===1&&<Badge color="amber">Admin</Badge>}</div><span className="text-[10px] text-gray-600">@{u.username}</span></div></div>
+                            <div className="flex items-center gap-3 min-w-0"><Avatar src={u.pfp_path} name={u.name} size="sm" /><div className="min-w-0"><div className="flex items-center gap-1.5 flex-wrap"><span className="text-xs font-bold text-white truncate">{u.name}</span>{u.is_admin===1&&<Badge color="amber">Admin</Badge>}{u.is_banned===1&&<Badge color="rose">Banned</Badge>}</div><span className="text-[10px] text-gray-600">@{u.username}</span></div></div>
                             <div className="flex gap-1.5 shrink-0">
                               <button onClick={()=>openEditUser(u)} className="flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold rounded-lg bg-white/[0.03] border border-white/[0.08] text-gray-300 hover:text-white hover:bg-white/[0.07] transition-all"><span className="w-3 h-3"><I.Edit /></span> Edit</button>
+                              {u.is_admin!==1&&<button onClick={()=>toggleBanUser(u)} className={`flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold rounded-lg border transition-all ${u.is_banned===1?"bg-emerald-500/10 border-emerald-500/20 text-emerald-400":"bg-orange-500/10 border-orange-500/20 text-orange-400"}`}><span className="w-3 h-3">{u.is_banned===1?<I.Check/>:<I.X/>}</span> {u.is_banned===1?"Unban":"Ban"}</button>}
                               {u.is_admin!==1&&<button onClick={()=>deleteUser(u.id)} className="flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold rounded-lg bg-rose-500/[0.04] border border-rose-500/10 text-rose-500 hover:bg-rose-500/10 transition-all"><span className="w-3 h-3"><I.Trash /></span> Del</button>}
                             </div>
                           </div>
@@ -1047,6 +1072,58 @@ export default function DesktopDashboard() {
                       ))}
                       {upcomingMatches.length===0&&<p className="text-xs text-gray-600 py-8 text-center">No active matches.</p>}
                     </div>
+                  </div>
+                )}
+
+                {/* ─ A4: SECURITY ─ */}
+                {adminTab === "security" && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-black text-sm text-white font-outfit">Security Logbook</h3>
+                      <button onClick={loadSecurityLogs} className="text-[10px] font-bold text-red-400 hover:text-red-300 transition-colors uppercase tracking-widest">Refresh Logs</button>
+                    </div>
+                    <div className="bg-[#0c0d14]/60 border border-white/[0.05] rounded-2xl overflow-hidden">
+                      <div className="max-h-[500px] overflow-y-auto">
+                        {securityLogs.length === 0 ? (
+                          <p className="text-xs text-gray-600 p-8 text-center">No security logs recorded yet.</p>
+                        ) : (
+                          <div className="divide-y divide-white/[0.03]">
+                            {securityLogs.map((log) => (
+                              <div key={log.id} className="p-3.5 flex gap-4 items-start hover:bg-white/[0.02] transition-colors">
+                                <div className="shrink-0 mt-0.5">
+                                  {log.action.includes("FAIL") || log.action.includes("BLOCK") || log.action.includes("BANNED") ? (
+                                    <div className="w-8 h-8 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center border border-rose-500/20"><span className="w-4 h-4"><I.X /></span></div>
+                                  ) : log.action.includes("RATE_LIMIT") ? (
+                                    <div className="w-8 h-8 rounded-full bg-orange-500/10 text-orange-500 flex items-center justify-center border border-orange-500/20"><span className="w-4 h-4"><I.Lock /></span></div>
+                                  ) : (
+                                    <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center border border-emerald-500/20"><span className="w-4 h-4"><I.Check /></span></div>
+                                  )}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center justify-between flex-wrap gap-2 mb-1">
+                                    <div className="flex items-center gap-2">
+                                      <Badge color={log.action.includes("FAIL") || log.action.includes("BLOCK") || log.action.includes("BANNED") ? "rose" : log.action.includes("RATE_LIMIT") ? "amber" : "emerald"}>{log.action}</Badge>
+                                      <span className="text-[10px] font-mono text-gray-500">IP: {log.ip_address}</span>
+                                    </div>
+                                    <span className="text-[10px] font-mono text-gray-500">{new Date(log.created_at).toLocaleString()}</span>
+                                  </div>
+                                  <p className="text-xs text-white mb-1.5">{log.details}</p>
+                                  {log.user_id && (
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-[10px] text-gray-500">Target User:</span>
+                                      <Avatar src={log.pfp_path} name={log.name || "?"} size="xs" />
+                                      <span className="text-[10px] font-bold text-gray-300">{log.name} (@{log.username})</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
                     {/* Auto result broadcast */}
                     {resultBroadcast && (
                       <div className="max-w-2xl card border-red-500/20 bg-red-500/[0.02] space-y-3">

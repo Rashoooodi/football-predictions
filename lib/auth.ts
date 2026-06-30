@@ -50,6 +50,14 @@ export async function getSession(): Promise<Session | null> {
 export async function requireUser(): Promise<Session> {
   const session = await getSession();
   if (!session) throw new Error("Unauthorized");
+  
+  // Enforce ban instantly even for active sessions
+  const user = db.prepare("SELECT is_banned FROM users WHERE id = ?").get(session.userId) as { is_banned: number } | undefined;
+  if (!user || user.is_banned === 1) {
+    logout();
+    throw new Error("Unauthorized: Banned");
+  }
+  
   return session;
 }
 
