@@ -38,8 +38,26 @@ export async function getSession(): Promise<Session | null> {
 
   try {
     const { payload } = await jwtVerify(token, SECRET);
+    const userId = payload.userId as number;
+    
+    // SECURITY PATCH: Enforce ban instantly even for active sessions across ALL APIs
+    const user = db.prepare("SELECT is_banned, locked_until FROM users WHERE id = ?").get(userId) as { is_banned: number, locked_until: string | null } | undefined;
+    
+    if (!user) {
+      logout();
+      return null;
+    }
+    if (user.is_banned === 1) {
+      logout();
+      return null;
+    }
+    if (user.locked_until && new Date(user.locked_until + "Z") > new Date()) {
+      logout();
+      return null;
+    }
+
     return {
-      userId: payload.userId as number,
+      userId,
       isAdmin: payload.isAdmin as boolean,
     };
   } catch {
@@ -50,14 +68,6 @@ export async function getSession(): Promise<Session | null> {
 export async function requireUser(): Promise<Session> {
   const session = await getSession();
   if (!session) throw new Error("Unauthorized");
-  
-  // Enforce ban instantly even for active sessions
-  const user = db.prepare("SELECT is_banned FROM users WHERE id = ?").get(session.userId) as { is_banned: number } | undefined;
-  if (!user || user.is_banned === 1) {
-    logout();
-    throw new Error("Unauthorized: Banned");
-  }
-  
   return session;
 }
 
