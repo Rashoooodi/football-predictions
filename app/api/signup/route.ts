@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { createSession } from "@/lib/auth";
+import { sendTelegramAlert } from "@/lib/telegram";
 import db from "@/lib/db";
 import crypto from "crypto";
 
@@ -79,6 +80,9 @@ export async function POST(request: NextRequest) {
 
     const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
     db.prepare("INSERT INTO audit_logs (user_id, action, ip_address, details) VALUES (?, 'SIGNUP_SUCCESS', ?, 'User created a new account')").run(userId, ip);
+
+    // Send Telegram Alert
+    sendTelegramAlert(`🔔 <b>New Predictor Registered!</b>\nName: ${name}\nUsername: @${username}\nIP: ${ip}`, "signup");
 
     const user = db.prepare("SELECT * FROM users WHERE id = ?").get(userId);
     return NextResponse.json(user);

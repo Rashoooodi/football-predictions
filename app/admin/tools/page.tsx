@@ -199,7 +199,7 @@ export default function AdminToolsPage() {
     if (activeUpcoming.length > 0) {
       lines.push("📅 *Upcoming Match Deadlines:*");
       activeUpcoming.slice(0, 3).forEach((m) => {
-        const timeStr = new Date(m.prediction_deadline).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        const timeStr = new Date(m.prediction_deadline).toLocaleTimeString("en-GB", { timeZone: "Asia/Bahrain", hour: "2-digit", minute: "2-digit" });
         const rewardTag = m.with_reward === 1 ? " [💰 Reward]" : "";
         lines.push(`• ${m.team1_flag} *${m.team1_country} vs ${m.team2_country}* ${m.team2_flag}`);
         lines.push(`  🔒 Lock Time: *${timeStr}*${rewardTag}`);
@@ -297,10 +297,7 @@ export default function AdminToolsPage() {
       {!loading && activeTab === "broadcast" && (
         <div className="space-y-4">
           <div className="card bg-[#0c0d14]/40 border-white/[0.04] p-5">
-            <h3 className="text-sm font-bold text-white mb-2">WhatsApp Update Text</h3>
-            <p className="text-xs text-gray-400 mb-4 leading-relaxed">
-              Copy this formatted message containing latest standings, hot streaks, and upcoming deadlines to update the family WhatsApp group.
-            </p>
+            <h3 className="text-sm font-bold text-white mb-2">Standings Broadcast</h3>
             <textarea
               readOnly
               value={broadcastText}
@@ -332,7 +329,7 @@ export default function AdminToolsPage() {
                   <span className="text-sm font-bold text-white">{item.match.team2_country}</span>
                 </div>
                 <p className="text-[10px] text-gray-400 mb-4">
-                  Deadline: <span className="font-bold text-gray-300">{new Date(item.match.prediction_deadline).toLocaleString()}</span>
+                  Deadline: <span className="font-bold text-gray-300">{new Date(item.match.prediction_deadline).toLocaleString("en-GB", { timeZone: "Asia/Bahrain" })}</span>
                 </p>
 
                 <h4 className="text-xs font-bold text-rose-400 mb-2">Missing Predictions ({item.missingUsers.length}):</h4>
@@ -410,24 +407,33 @@ export default function AdminToolsPage() {
         </div>
       )}
 
-      {/* TAB 4: DATABASE BACKUP */}
+      {/* TAB 4: DATABASE BACKUP & EXPORT */}
       {!loading && activeTab === "backup" && (
         <div className="space-y-4">
           <div className="card bg-[#0c0d14]/40 border-white/[0.04] p-5 text-center flex flex-col items-center">
             <div className="w-14 h-14 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center justify-center text-3xl mb-4 select-none">
               💾
             </div>
-            <h3 className="text-base font-bold text-white font-outfit mb-2">Download System Backup</h3>
+            <h3 className="text-base font-bold text-white font-outfit mb-2">Data Export & Backup</h3>
             <p className="text-xs text-gray-400 max-w-sm mb-6 leading-relaxed">
-              Export and download a complete copy of the SQLite database (`football.db`) containing all user accounts, match settings, and history logs.
+              Export and download a complete copy of the SQLite database (`football.db`) or export all predictions as a CSV file.
             </p>
-            <a
-              href="/api/admin/backup"
-              download
-              className="btn-primary py-2.5 px-6 text-xs font-bold flex items-center justify-center gap-2"
-            >
-              📥 Download Backup (.db)
-            </a>
+            <div className="w-full flex flex-col gap-3">
+              <a
+                href="/api/admin/predictions/export"
+                download
+                className="btn-secondary w-full py-2.5 px-6 text-xs font-bold flex items-center justify-center gap-2"
+              >
+                📊 Download Predictions (CSV)
+              </a>
+              <a
+                href="/api/admin/backup"
+                download
+                className="btn-primary w-full py-2.5 px-6 text-xs font-bold flex items-center justify-center gap-2"
+              >
+                📥 Download Backup (.db)
+              </a>
+            </div>
           </div>
         </div>
       )}

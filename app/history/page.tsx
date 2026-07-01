@@ -35,7 +35,7 @@ export default function HistoryPage() {
             Match <span className="text-gradient">History</span>
           </h1>
           <p className="text-xs text-gray-400 mt-1">
-            Completed matches and family scores ({matches.length} total)
+            Completed matches and predictors scores ({matches.length} total)
           </p>
         </div>
         <Link href="/leaderboard" className="btn-secondary text-sm flex items-center gap-2">
@@ -94,7 +94,7 @@ export default function HistoryPage() {
 
               {/* Match accuracy and predictions statistics bar */}
               <div className="mt-4 pt-3 border-t border-white/[0.03] flex items-center justify-between text-[11px] text-gray-500">
-                <span>Kickoff: {new Date(m.kickoff_time).toLocaleDateString([], { dateStyle: "medium" })}</span>
+                <span>Kickoff: {new Date(m.kickoff_time).toLocaleDateString("en-GB", { timeZone: "Asia/Bahrain", dateStyle: "medium" })}</span>
                 <span className="font-semibold text-red-500 bg-red-500/5 px-2 py-0.5 rounded-md border border-red-500/10">
                   🎯 {m.correct_count} correct ({m.prediction_count} predictions)
                 </span>

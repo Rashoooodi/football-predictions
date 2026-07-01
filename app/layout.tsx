@@ -52,7 +52,7 @@ export default function RootLayout({
         <main className="pb-32 min-h-[100dvh] flex flex-col">
           <div className="flex-grow">{children}</div>
           <footer className="py-8 text-center text-[10px] text-gray-400 font-medium">
-            <p>&copy; {new Date().getFullYear()} Team Rashid Works</p>
+            <p>&copy; {new Date().getFullYear()} support.example.com</p>
             <p className="mt-1">Support: <a href="mailto:him@support.example.com" className="hover:text-white transition-colors">him@support.example.com</a></p>
           </footer>
         </main>

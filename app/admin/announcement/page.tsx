@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 
 export default function AdminAnnouncementPage() {
   const [announcement, setAnnouncement] = useState("");
+  const [emoji, setEmoji] = useState("📣");
+  const [color, setColor] = useState("#ef4444");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -16,6 +18,8 @@ export default function AdminAnnouncementPage() {
       .then((res) => res.json())
       .then((data) => {
         setAnnouncement(data.announcement || "");
+        setEmoji(data.emoji || "📣");
+        setColor(data.color || "#ef4444");
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -30,7 +34,7 @@ export default function AdminAnnouncementPage() {
       const res = await fetch("/api/announcement", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ announcement }),
+        body: JSON.stringify({ announcement, emoji, color }),
       });
 
       if (res.ok) {
@@ -110,6 +114,35 @@ export default function AdminAnnouncementPage() {
             </div>
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[10px] uppercase font-bold tracking-wider text-gray-400 mb-2">
+                Emoji
+              </label>
+              <input
+                type="text"
+                value={emoji}
+                onChange={(e) => setEmoji(e.target.value)}
+                maxLength={2}
+                className="w-full bg-[#08090f] border border-white/[0.08] focus:border-red-500/50 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none transition-all duration-300 font-outfit"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] uppercase font-bold tracking-wider text-gray-400 mb-2">
+                Banner Color
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  value={color}
+                  onChange={(e) => setColor(e.target.value)}
+                  className="w-12 h-12 rounded-xl cursor-pointer bg-transparent border-0 p-0"
+                />
+                <span className="text-xs font-mono text-gray-400 uppercase">{color}</span>
+              </div>
+            </div>
+          </div>
+
           <button
             type="submit"
             disabled={saving}
@@ -134,7 +167,7 @@ export default function AdminAnnouncementPage() {
                 const res = await fetch("/api/announcement", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ announcement: "" }),
+                  body: JSON.stringify({ announcement: "", emoji: "📣", color: "#ef4444" }),
                 });
                 if (res.ok) {
                   setMessage({ type: "success", text: "Announcement cleared!" });

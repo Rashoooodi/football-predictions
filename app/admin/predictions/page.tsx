@@ -311,7 +311,7 @@ export default function AdminPredictionsPage() {
                           {p.team1_score} - {p.team2_score}
                         </td>
                         <td className="py-3.5 text-right text-gray-500 font-mono text-[10px]">
-                          {new Date(p.submitted_at + "Z").toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {new Date(p.submitted_at + "Z").toLocaleTimeString("en-GB", { timeZone: "Asia/Bahrain", hour: '2-digit', minute: '2-digit' })}
                         </td>
                         <td className="py-3.5 pr-2 text-right">
                           <button

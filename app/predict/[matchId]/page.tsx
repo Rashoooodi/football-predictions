@@ -156,7 +156,7 @@ export default function PredictPage() {
 
         <div className="border-t border-white/[0.04] pt-4 text-center">
           <p className="text-xs text-gray-400">
-            Kickoff: <span className="font-semibold text-gray-300">{new Date(match.kickoff_time).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}</span>
+            Kickoff: <span className="font-semibold text-gray-300">{new Date(match.kickoff_time).toLocaleString("en-GB", { timeZone: "Asia/Bahrain", dateStyle: "medium", timeStyle: "short" })}</span>
           </p>
           <div className="mt-2 flex justify-center">
             <CountdownTimer deadline={match.prediction_deadline} kickoff={match.kickoff_time} />

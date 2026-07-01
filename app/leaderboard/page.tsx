@@ -42,7 +42,7 @@ export default function LeaderboardPage() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [stats, setStats] = useState<StatsData>({ stats: [], scoreProphet: null });
   const [me, setMe] = useState<{ id: number; name: string; username: string; pfp_path: string | null; is_admin: number } | null>(null);
-  const [announcement, setAnnouncement] = useState("");
+  const [announcementObj, setAnnouncementObj] = useState<{message: string, emoji: string, color: string} | null>(null);
   const [showNotifBanner, setShowNotifBanner] = useState(false);
 
   // PWA states
@@ -89,7 +89,13 @@ export default function LeaderboardPage() {
         requestNotificationPermissionAndSubscribe();
       }
       const annData = await annRes.json();
-      setAnnouncement(annData.announcement || "");
+      if (annData.announcement) {
+        setAnnouncementObj({
+          message: annData.announcement,
+          emoji: annData.emoji || "📣",
+          color: annData.color || "#ef4444"
+        });
+      }
     }
     load();
 
@@ -425,13 +431,13 @@ export default function LeaderboardPage() {
       </div>
 
       {/* Announcement Banner */}
-      {announcement && (
-        <div className="mb-6 p-4 rounded-2xl bg-red-500/5 border border-red-500/10 shadow-[0_4px_30px_rgba(16,185,129,0.02)] flex items-start gap-3 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
-          <span className="text-xl select-none mt-0.5">📢</span>
+      {announcementObj && (
+        <div className="mb-6 p-4 rounded-2xl flex items-start gap-3 relative overflow-hidden shadow-lg" style={{ backgroundColor: announcementObj.color + "15", borderColor: announcementObj.color + "30", borderWidth: 1 }}>
+          <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: announcementObj.color }}></div>
+          <span className="text-xl select-none mt-0.5">{announcementObj.emoji}</span>
           <div>
-            <span className="text-[9px] font-bold text-red-400 uppercase tracking-widest block">Announcement</span>
-            <p className="text-xs text-gray-200 mt-1 font-medium leading-relaxed font-outfit">{announcement}</p>
+            <span className="text-[9px] font-bold uppercase tracking-widest block" style={{ color: announcementObj.color }}>Announcement</span>
+            <p className="text-xs text-gray-200 mt-1 font-medium leading-relaxed font-outfit whitespace-pre-wrap">{announcementObj.message}</p>
           </div>
         </div>
       )}

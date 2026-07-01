@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateUsername, createSession, logout } from "@/lib/auth";
+import { sendTelegramAlert } from "@/lib/telegram";
 import db from "@/lib/db";
 import crypto from "crypto";
 
@@ -39,6 +40,10 @@ export async function POST(request: NextRequest) {
     const banMsgRow = db.prepare("SELECT value FROM settings WHERE key = 'ban_message'").get() as any;
     const banMsg = banMsgRow ? banMsgRow.value : "I thought of this... try again 🙊 can't hack me that easily";
     db.prepare("INSERT INTO audit_logs (user_id, action, ip_address, details) VALUES (NULL, 'IP_BLOCKED', ?, 'Connection dropped: Banned IP')").run(ip);
+    
+    // Alert the admin that a banned IP is actively trying to bypass
+    sendTelegramAlert(`🔒 <b>Banned IP Blocked</b>\nIP: ${ip} just hit the server and was rejected.`, "banned");
+    
     return NextResponse.json({ error: banMsg }, { status: 403 });
   }
 
@@ -91,6 +96,7 @@ export async function POST(request: NextRequest) {
       if (updatedUser.failed_attempts >= 5) {
         db.prepare("UPDATE users SET locked_until = datetime('now', '+30 minutes') WHERE id = ?").run(user.id);
         db.prepare("INSERT INTO audit_logs (user_id, action, ip_address, details) VALUES (?, 'ACCOUNT_LOCKED', ?, 'Account auto-locked (5 failed attempts)')").run(user.id, ip);
+        sendTelegramAlert(`⚠️ <b>Brute Force Detected!</b>\nAccount @${username} was just locked due to 5 failed PIN attempts.\nIP: ${ip}`, "bruteforce");
       }
       return NextResponse.json({ error: "Incorrect PIN." }, { status: 401 });
     }
@@ -112,6 +118,11 @@ export async function POST(request: NextRequest) {
 
   db.prepare("UPDATE users SET failed_attempts = 0, locked_until = NULL, last_login_at = datetime('now') WHERE id = ?").run(user.id);
   db.prepare("INSERT INTO audit_logs (user_id, action, ip_address, details) VALUES (?, 'LOGIN_SUCCESS', ?, 'User successfully logged in')").run(user.id, ip);
+
+  // Honeypot Alert
+  if (username === "admin") {
+    sendTelegramAlert(`🚨 <b>HONEYPOT TRIGGERED!</b> 🚨\nSomeone successfully logged into the fake 'admin' account!\nIP: ${ip}`, "honeypot");
+  }
 
   await createSession(user.id);
 

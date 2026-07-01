@@ -113,7 +113,7 @@ export default function DesktopDashboard() {
   const [upcomingMatches, setUpcomingMatches] = useState<Match[]>([]);
   const [historyMatches, setHistoryMatches] = useState<Match[]>([]);
   const [familyMembers, setFamilyMembers] = useState<User[]>([]);
-  const [announcement, setAnnouncement] = useState<{ message: string } | null>(null);
+  const [announcementObj, setAnnouncementObj] = useState<{message: string, emoji: string, color: string} | null>(null);
   const [tournamentEnded, setTournamentEnded] = useState(false);
 
   /* Nav */
@@ -150,7 +150,7 @@ export default function DesktopDashboard() {
   const [ds, setDs] = useState({ x: 0, y: 0 });
 
   /* Admin sub */
-  const [adminTab, setAdminTab] = useState<"predictors"|"matches"|"scores"|"tools"|"announcement"|"import"|"api_import"|"settings"|"security">("predictors");
+  const [adminTab, setAdminTab] = useState<"predictors"|"matches"|"scores"|"tools"|"announcement"|"import"|"api_import"|"settings"|"security"|"notifications">("predictors");
 
   /* Admin users */
   const [newName, setNewName] = useState(""); const [newUsername, setNewUsername] = useState(""); const [newPfp, setNewPfp] = useState<File | null>(null); const [newPfpPreview, setNewPfpPreview] = useState<string | null>(null); const [addErr, setAddErr] = useState(""); const [adding, setAdding] = useState(false);
@@ -168,7 +168,13 @@ export default function DesktopDashboard() {
   /* Admin settings */
   const [adminFirstPts, setAdminFirstPts] = useState(2);
   const [adminOtherPts, setAdminOtherPts] = useState(1);
-  const [adminBanMessage, setAdminBanMessage] = useState("");
+  const [adminBanMsg, setAdminBanMsg] = useState("");
+  const [tgBotToken, setTgBotToken] = useState("");
+  const [tgChatId, setTgChatId] = useState("");
+  const [notifySignup, setNotifySignup] = useState(true);
+  const [notifyBanned, setNotifyBanned] = useState(true);
+  const [notifyBruteforce, setNotifyBruteforce] = useState(true);
+  const [notifyHoneypot, setNotifyHoneypot] = useState(true);
   const [adminSavingPts, setAdminSavingPts] = useState(false);
   const [resultBroadcast, setResultBroadcast] = useState<string | null>(null);
   const [broadcastMatchName, setBroadcastMatchName] = useState("");
@@ -187,9 +193,8 @@ export default function DesktopDashboard() {
   const [bannedIps, setBannedIps] = useState<any[]>([]);
 
   /* Admin misc */
-  const [annInput, setAnnInput] = useState(""); const [annSaving, setAnnSaving] = useState(false);
+  const [annInput, setAnnInput] = useState(""); const [annEmoji, setAnnEmoji] = useState("📣"); const [annColor, setAnnColor] = useState("#ef4444"); const [annSaving, setAnnSaving] = useState(false);
   const [pushTitle, setPushTitle] = useState(""); const [pushBody, setPushBody] = useState(""); const [pushUrl, setPushUrl] = useState(""); const [pushSending, setPushSending] = useState(false); const [pushFeedback, setPushFeedback] = useState("");
-  const [importFile, setImportFile] = useState<File | null>(null); const [importing, setImporting] = useState(false); const [importReport, setImportReport] = useState<string | null>(null); const [importErr, setImportErr] = useState("");
   const [endingTournament, setEndingTournament] = useState(false);
 
   /* Family history */
@@ -252,7 +257,7 @@ export default function DesktopDashboard() {
     }
     if (hi.ok) setHistoryMatches(await hi.json());
     if (fa.ok) setFamilyMembers(await fa.json());
-    if (an.ok) { const d = await an.json(); if (d.message) { setAnnouncement(d); setAnnInput(d.message); } }
+    if (an.ok) { const d = await an.json(); if (d.announcement) { setAnnouncementObj({ message: d.announcement, emoji: d.emoji || "📣", color: d.color || "#ef4444" }); setAnnInput(d.announcement); setAnnEmoji(d.emoji || "📣"); setAnnColor(d.color || "#ef4444"); } else { setAnnouncementObj(null); setAnnInput(""); } }
     if (tr.ok) { const d = await tr.json(); setTournamentEnded(d.ended); }
     if (pr.ok) {
       const list = await pr.json() as { match_id: number; team1_score: number; team2_score: number }[];
@@ -264,7 +269,13 @@ export default function DesktopDashboard() {
       const d = await setRes.json();
       setAdminFirstPts(d.first_correct_points || 2);
       setAdminOtherPts(d.other_correct_points || 1);
-      setAdminBanMessage(d.ban_message || "I thought of this... try again 🙊 can't hack me that easily");
+      setAdminBanMsg(d.ban_message || "");
+      setTgBotToken(d.telegram_bot_token || "");
+      setTgChatId(d.telegram_chat_id || "");
+      if (d.notify_signup !== undefined) setNotifySignup(d.notify_signup);
+      if (d.notify_banned !== undefined) setNotifyBanned(d.notify_banned);
+      if (d.notify_bruteforce !== undefined) setNotifyBruteforce(d.notify_bruteforce);
+      if (d.notify_honeypot !== undefined) setNotifyHoneypot(d.notify_honeypot);
     }
   }
 
@@ -325,7 +336,17 @@ export default function DesktopDashboard() {
     await fetch("/api/admin/settings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ first_correct_points: adminFirstPts, other_correct_points: adminOtherPts, ban_message: adminBanMessage })
+      body: JSON.stringify({
+        first_correct_points: adminFirstPts,
+        other_correct_points: adminOtherPts,
+        ban_message: adminBanMsg,
+        telegram_bot_token: tgBotToken,
+        telegram_chat_id: tgChatId,
+        notify_signup: notifySignup,
+        notify_banned: notifyBanned,
+        notify_bruteforce: notifyBruteforce,
+        notify_honeypot: notifyHoneypot
+      }),
     });
     setAdminSavingPts(false);
     alert("Settings saved!");
@@ -571,7 +592,7 @@ export default function DesktopDashboard() {
     if (leaderboard.length) { lines.push("📊 *Current Standings:*"); leaderboard.slice(0,3).forEach((u,i) => lines.push(`${["🥇","🥈","🥉"][i]} ${u.name}: *${u.points} pts* (${u.correct_count} exact)`)); lines.push(""); }
     const topS = streaks.filter(s => s.current_streak > 0).sort((a,b) => b.current_streak - a.current_streak).slice(0,2);
     if (topS.length) { lines.push("🔥 *Hot Streaks:*"); topS.forEach(s => lines.push(`• ${s.name}: *${s.current_streak} in a row!*`)); lines.push(""); }
-    upcomingMatches.filter(m => !m.is_finished).slice(0,3).forEach(m => { lines.push(`• ${m.team1_flag} *${m.team1_country} vs ${m.team2_country}* ${m.team2_flag}`); lines.push(`  🔒 Lock: *${new Date(m.prediction_deadline).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}*${m.with_reward ? " [💰 Reward]":""}`); });
+    upcomingMatches.filter(m => !m.is_finished).slice(0,3).forEach(m => { lines.push(`• ${m.team1_flag} *${m.team1_country} vs ${m.team2_country}* ${m.team2_flag}`); lines.push(`  🔒 Lock: *${new Date(m.prediction_deadline).toLocaleTimeString("en-GB",{timeZone: "Asia/Bahrain", hour:"2-digit",minute:"2-digit"})}*${m.with_reward ? " [💰 Reward]":""}`); });
     setBroadcastText(lines.join("\n"));
     const auditList: { match: Match; missing: User[] }[] = [];
     for (const m of upcomingMatches.filter(m => !m.is_finished)) { const pr = await fetch(`/api/matches/${m.id}/predictions`); if (pr.ok) { const { predictions } = await pr.json(); const ids = new Set(predictions.map((p: any) => p.user_id)); auditList.push({ match: m, missing: familyMembers.filter(u => !ids.has(u.id)) }); } }
@@ -604,7 +625,7 @@ export default function DesktopDashboard() {
   }
 
   /* ── Announcement ── */
-  async function handleAnn(e: React.FormEvent) { e.preventDefault(); setAnnSaving(true); await fetch("/api/announcement", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: annInput }) }); await loadAll(); setAnnSaving(false); }
+  async function handleAnn(e: React.FormEvent) { e.preventDefault(); setAnnSaving(true); await fetch("/api/announcement", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ announcement: annInput, emoji: annEmoji, color: annColor }) }); await loadAll(); setAnnSaving(false); }
 
   async function handlePushBroadcast(e: React.FormEvent) {
     e.preventDefault(); setPushSending(true); setPushFeedback("");
@@ -627,15 +648,7 @@ export default function DesktopDashboard() {
     setPushSending(false);
   }
 
-  /* ── Import ── */
-  async function handleImport(e: React.FormEvent) {
-    e.preventDefault(); if (!importFile) return; setImporting(true); setImportErr(""); setImportReport(null);
-    const fd = new FormData(); fd.append("file", importFile);
-    const res = await fetch("/api/import", { method: "POST", body: fd });
-    const d = await res.json();
-    if (res.ok) { setImportReport(d.report || "Done."); setImportFile(null); await loadAll(); } else setImportErr(d.error || "Failed");
-    setImporting(false);
-  }
+
 
   /* ─── RENDER ──────────────────────────────────────────────────── */
   if (checking) return (
@@ -725,14 +738,14 @@ export default function DesktopDashboard() {
         {/* ══ LEFT SIDEBAR ══ */}
         <aside className="w-72 xl:w-80 shrink-0 border-r border-white/[0.04] flex flex-col overflow-hidden bg-[#07080e]/40 backdrop-blur-lg">
           <div className="flex-1 overflow-y-auto p-5 space-y-5 scrollbar-thin">
-            {announcement && announcement.message && (
-              <div className="relative overflow-hidden bg-gradient-to-br from-red-500/[0.04] to-orange-500/[0.01] border border-red-500/10 rounded-2xl p-4 shadow-lg shadow-red-950/20">
-                <div className="absolute top-0 left-0 w-[3px] h-full bg-gradient-to-b from-red-400 to-orange-400" />
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <span className="w-1.5 h-1.5 bg-red-400 rounded-full animate-ping" />
-                  <p className="text-[9px] font-black text-red-400 uppercase tracking-widest">Notice Board</p>
+            {announcementObj && announcementObj.message && (
+              <div className="relative overflow-hidden bg-[#07080e]/40 backdrop-blur-lg border rounded-2xl p-4 shadow-lg" style={{ backgroundColor: announcementObj.color + "0a", borderColor: announcementObj.color + "1a" }}>
+                <div className="absolute top-0 left-0 w-[3px] h-full" style={{ backgroundColor: announcementObj.color }} />
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="text-sm">{announcementObj.emoji}</span>
+                  <p className="text-[9px] font-black uppercase tracking-widest" style={{ color: announcementObj.color }}>Notice Board</p>
                 </div>
-                <p className="text-xs text-gray-300 leading-relaxed font-medium">{announcement.message}</p>
+                <p className="text-xs text-gray-300 leading-relaxed font-medium whitespace-pre-wrap">{announcementObj.message}</p>
               </div>
             )}
 
@@ -1004,8 +1017,9 @@ export default function DesktopDashboard() {
                     { key:"tools",        label:"Tools",     icon:<I.Settings /> },
                     { key:"settings",     label:"Settings",  icon:<I.Settings /> },
                     { key:"announcement", label:"Notice",    icon:<I.Megaphone /> },
-                    { key:"import",       label:"Chat Import",  icon:<I.Msg /> },
+
                     { key:"security",     label:"Security",  icon:<I.Lock /> },
+                    { key:"notifications",label:"Alerts",    icon:<I.Star /> },
                   ] as { key: string; label: string; icon: React.ReactNode }[]).map(t => (
                     <button key={t.key} onClick={() => setAdminTab(t.key as any)} className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[10px] font-bold transition-all duration-150 ${adminTab===t.key?"bg-amber-500/10 border border-amber-500/25 text-amber-400":"text-gray-500 hover:text-gray-200 border border-transparent hover:bg-white/[0.03]"}`}>
                       <span className="w-3.5 h-3.5">{t.icon}</span>{t.label}
@@ -1061,7 +1075,7 @@ export default function DesktopDashboard() {
                       <div className="space-y-2.5 max-h-[440px] overflow-y-auto pr-1">
                         {upcomingMatches.map(m => (
                           <div key={m.id} className="card border-white/[0.04] p-4 flex items-center justify-between gap-4">
-                            <div className="min-w-0 flex-1"><div className="flex items-center gap-2 flex-wrap"><span className="text-xl">{m.team1_flag}</span><span className="text-xs font-bold text-white">{m.team1_country}</span><span className="text-gray-600 text-xs">vs</span><span className="text-xl">{m.team2_flag}</span><span className="text-xs font-bold text-white">{m.team2_country}</span></div><div className="flex gap-1.5 mt-2 flex-wrap"><Badge color={m.with_reward?"emerald":"gray"}>{m.with_reward?"💰":"—"}</Badge>{m.is_frozen===1&&<Badge color="cyan">❄️ Frozen</Badge>}{m.is_hidden===1&&<Badge color="rose">👁️ Hidden</Badge>}<span className="text-[9px] text-gray-600 font-mono">🕓 {new Date(m.kickoff_time).toLocaleDateString([],{month:"short",day:"numeric"})} {new Date(m.kickoff_time).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>{m.prediction_open_time&&<span className="text-[9px] text-red-400 font-mono ml-2">🔓 Opens: {new Date(m.prediction_open_time).toLocaleDateString([],{month:"short",day:"numeric"})} {new Date(m.prediction_open_time).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>}</div></div>
+                            <div className="min-w-0 flex-1"><div className="flex items-center gap-2 flex-wrap"><span className="text-xl">{m.team1_flag}</span><span className="text-xs font-bold text-white">{m.team1_country}</span><span className="text-gray-600 text-xs">vs</span><span className="text-xl">{m.team2_flag}</span><span className="text-xs font-bold text-white">{m.team2_country}</span></div><div className="flex gap-1.5 mt-2 flex-wrap"><Badge color={m.with_reward?"emerald":"gray"}>{m.with_reward?"💰":"—"}</Badge>{m.is_frozen===1&&<Badge color="cyan">❄️ Frozen</Badge>}{m.is_hidden===1&&<Badge color="rose">👁️ Hidden</Badge>}<span className="text-[9px] text-gray-600 font-mono">🕓 {new Date(m.kickoff_time).toLocaleDateString("en-GB",{timeZone: "Asia/Bahrain", month:"short",day:"numeric"})} {new Date(m.kickoff_time).toLocaleTimeString("en-GB",{timeZone: "Asia/Bahrain", hour:"2-digit",minute:"2-digit"})}</span>{m.prediction_open_time&&<span className="text-[9px] text-red-400 font-mono ml-2">🔓 Opens: {new Date(m.prediction_open_time).toLocaleDateString("en-GB",{timeZone: "Asia/Bahrain", month:"short",day:"numeric"})} {new Date(m.prediction_open_time).toLocaleTimeString("en-GB",{timeZone: "Asia/Bahrain", hour:"2-digit",minute:"2-digit"})}</span>}</div></div>
                             <div className="flex items-center gap-1.5 shrink-0">
                               <button onClick={()=>toggleVisibility(m)} className={`flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold rounded-lg border transition-all ${m.is_hidden?"bg-white/[0.03] border-white/[0.08] text-gray-400 hover:text-white":"bg-green-500/10 border-green-500/20 text-green-400 hover:bg-green-500/20"}`}><span className="w-3 h-3">{m.is_hidden?<I.EyeOff/>:<I.Eye/>}</span>{m.is_hidden?"Publish":"Hide"}</button>
                               <button onClick={()=>toggleFreeze(m)} className={`flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold rounded-lg border transition-all ${m.is_frozen?"bg-rose-500/10 border-rose-500/20 text-rose-400":"bg-white/[0.03] border-white/[0.08] text-gray-400 hover:text-white"}`}><span className="w-3 h-3">{m.is_frozen?<I.Unlock/>:<I.Lock/>}</span>{m.is_frozen?"Unfreeze":"Freeze"}</button>
@@ -1220,7 +1234,7 @@ export default function DesktopDashboard() {
                                         <button onClick={()=>banIp(log.ip_address)} className="text-[8px] font-bold text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 px-1.5 py-0.5 rounded border border-rose-500/20 transition-colors uppercase tracking-wider">Ban IP</button>
                                       </div>
                                     </div>
-                                    <span className="text-[10px] font-mono text-gray-500">{new Date(log.created_at).toLocaleString()}</span>
+                                    <span className="text-[10px] font-mono text-gray-500">{new Date(log.created_at + "Z").toLocaleString("en-GB", { timeZone: "Asia/Bahrain" })}</span>
                                   </div>
                                   <p className="text-xs text-white mb-1.5">{log.details}</p>
                                   {log.user_id && (
@@ -1264,8 +1278,11 @@ export default function DesktopDashboard() {
                     </div>
                     <div className="card border-white/[0.05] flex flex-col items-center text-center gap-4 py-8 xl:col-span-2">
                       <div className="w-12 h-12 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center justify-center text-indigo-400"><div className="w-6 h-6"><I.Download /></div></div>
-                      <div><h3 className="font-black text-sm text-white font-outfit">Database Backup</h3><p className="text-[10px] text-gray-600 max-w-xs mt-1">Download a full SQLite binary backup of all data.</p></div>
-                      <a href="/api/admin/backup" download className="btn-primary py-2.5 px-6 text-xs font-bold flex items-center gap-2"><span className="w-4 h-4"><I.Download /></span> Download Backup</a>
+                      <div><h3 className="font-black text-sm text-white font-outfit">Data Export & Backup</h3><p className="text-[10px] text-gray-600 max-w-xs mt-1">Download a full SQLite binary backup or export predictions as CSV.</p></div>
+                      <div className="flex gap-4">
+                        <a href="/api/admin/predictions/export" download className="btn-secondary py-2.5 px-6 text-xs font-bold flex items-center gap-2"><span className="w-4 h-4"><I.Download /></span> Predictions CSV</a>
+                        <a href="/api/admin/backup" download className="btn-primary py-2.5 px-6 text-xs font-bold flex items-center gap-2"><span className="w-4 h-4"><I.Download /></span> SQLite Backup</a>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1277,7 +1294,22 @@ export default function DesktopDashboard() {
                     <form onSubmit={handleAnn} className="card border-white/[0.05] space-y-4 h-fit">
                       <h3 className="font-black text-sm text-white font-outfit">📌 Pin Announcement Banner</h3>
                       <p className="text-[10px] text-gray-600 leading-relaxed">Appears as a pinned banner at the top of the app for all users. Leave blank to clear.</p>
-                      <textarea placeholder="e.g. Predictions lock in 1 hour!" value={annInput} onChange={e=>setAnnInput(e.target.value)} rows={5} className="input text-xs p-3 bg-[#07080f] border-white/[0.07] resize-none" />
+                      <textarea placeholder="e.g. Predictions lock in 1 hour!" value={annInput} onChange={e=>setAnnInput(e.target.value)} rows={3} className="input text-xs p-3 bg-[#07080f] border-white/[0.07] resize-none" />
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="field-label">Emoji</label>
+                          <input type="text" value={annEmoji} onChange={e=>setAnnEmoji(e.target.value)} maxLength={2} className="input text-xs p-2.5 bg-[#07080f] border-white/[0.07]" />
+                        </div>
+                        <div>
+                          <label className="field-label">Banner Color</label>
+                          <div className="flex items-center gap-2">
+                            <input type="color" value={annColor} onChange={e=>setAnnColor(e.target.value)} className="w-10 h-10 rounded-xl cursor-pointer bg-transparent border-0 p-0" />
+                            <span className="text-[10px] text-gray-400 font-mono">{annColor}</span>
+                          </div>
+                        </div>
+                      </div>
+
                       <button type="submit" disabled={annSaving} className="btn-primary w-full py-2.5 text-xs font-bold flex items-center justify-center gap-2"><span className="w-4 h-4"><I.Megaphone /></span>{annSaving?"Pinning…":"Pin Announcement"}</button>
                     </form>
 
@@ -1309,28 +1341,6 @@ export default function DesktopDashboard() {
 
                       <button type="submit" disabled={pushSending} className="btn-primary w-full py-2.5 text-xs font-bold flex items-center justify-center gap-2"><span className="w-4 h-4"><I.Megaphone /></span>{pushSending?"Sending…":"Send Push Notification"}</button>
                     </form>
-                  </div>
-                )}
-
-                {/* ─ A6: IMPORT ─ */}
-                {adminTab === "import" && (
-                  <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-                    <form onSubmit={handleImport} className="card border-white/[0.05] space-y-4 h-fit">
-                      <h3 className="font-black text-sm text-white font-outfit">Chat Logs Importer</h3>
-                      <p className="text-[10px] text-gray-600 leading-relaxed">Upload a WhatsApp .txt export to backfill historical predictions.</p>
-                      <label htmlFor="import-file" className={`flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-200 ${importFile?"border-red-500/30 bg-red-500/[0.03]":"border-white/[0.08] hover:border-white/20"}`}>
-                        <div className="w-10 h-10 text-gray-600 mb-3"><I.Upload /></div>
-                        <p className="text-xs font-semibold text-gray-400">{importFile?importFile.name:"Click to select .txt file"}</p>
-                        <p className="text-[9px] text-gray-600 mt-1">WhatsApp exported chat log</p>
-                        <input id="import-file" type="file" accept=".txt" className="hidden" onChange={e=>setImportFile(e.target.files?.[0]||null)} />
-                      </label>
-                      {importErr&&<p className="text-[10px] text-rose-400">⚠️ {importErr}</p>}
-                      <button type="submit" disabled={importing||!importFile} className="btn-primary w-full py-2.5 text-xs font-bold">{importing?"Processing…":"Run Import"}</button>
-                    </form>
-                    <div className="card border-white/[0.05] xl:col-span-2 space-y-3">
-                      <h3 className="font-black text-sm text-white font-outfit">Import Report</h3>
-                      <div className="bg-[#07080f] border border-white/[0.07] rounded-xl p-4 h-64 overflow-y-auto font-mono text-[11px] text-gray-400 whitespace-pre-wrap leading-relaxed">{importReport||"No import yet. Results will appear here."}</div>
-                    </div>
                   </div>
                 )}
 
@@ -1371,14 +1381,81 @@ export default function DesktopDashboard() {
                         <div>
                           <label className="field-label">Custom Ban Message</label>
                           <textarea
-                            value={adminBanMessage}
-                            onChange={(e) => setAdminBanMessage(e.target.value)}
+                            value={adminBanMsg}
+                            onChange={(e) => setAdminBanMsg(e.target.value)}
                             className="input bg-[#0c0d14] text-white resize-none h-16"
                             required
                           />
                         </div>
                         <button type="submit" disabled={adminSavingPts} className="btn-primary w-full py-3 text-xs flex items-center justify-center gap-2">
                           {adminSavingPts ? <Spinner /> : "Save Settings"}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+
+                {/* ─ A9: NOTIFICATIONS ─ */}
+                {adminTab === "notifications" && (
+                  <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h3 className="font-black text-sm text-white font-outfit">Telegram Alerts</h3>
+                        <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mt-0.5">Instant Server Notifications</p>
+                      </div>
+                    </div>
+                    
+                    <form onSubmit={saveAdminSettings} className="card p-5 bg-[#0c0d14]/70 border-white/[0.05] shadow-lg shadow-black/20">
+                      <div className="space-y-4">
+                        <div>
+                          <label className="field-label">Telegram Bot Token</label>
+                          <p className="text-[10px] text-gray-600 mb-2 leading-relaxed">From @BotFather (e.g. 123456789:ABCdefGHIjklmNOPqrsTUVwxyz)</p>
+                          <input
+                            type="text"
+                            value={tgBotToken}
+                            onChange={(e) => setTgBotToken(e.target.value)}
+                            className="input bg-[#0c0d14] text-white font-mono text-[10px]"
+                            placeholder="Bot Token"
+                          />
+                        </div>
+                        <div>
+                          <label className="field-label">Telegram Chat ID</label>
+                          <p className="text-[10px] text-gray-600 mb-2 leading-relaxed">The ID of your user or group chat (e.g. 987654321)</p>
+                          <input
+                            type="text"
+                            value={tgChatId}
+                            onChange={(e) => setTgChatId(e.target.value)}
+                            className="input bg-[#0c0d14] text-white font-mono text-[10px]"
+                            placeholder="Chat ID"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="pt-4 space-y-3 border-t border-white/[0.05] mt-4">
+                        <h3 className="font-bold text-xs text-white">Notification Triggers</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <label className="flex items-center gap-3">
+                            <input type="checkbox" checked={notifySignup} onChange={(e) => setNotifySignup(e.target.checked)} className="rounded border-gray-700 bg-gray-900" />
+                            <span className="text-xs text-gray-300">New Predictor Registered</span>
+                          </label>
+                          <label className="flex items-center gap-3">
+                            <input type="checkbox" checked={notifyBanned} onChange={(e) => setNotifyBanned(e.target.checked)} className="rounded border-gray-700 bg-gray-900" />
+                            <span className="text-xs text-gray-300">Banned IP Blocked</span>
+                          </label>
+                          <label className="flex items-center gap-3">
+                            <input type="checkbox" checked={notifyBruteforce} onChange={(e) => setNotifyBruteforce(e.target.checked)} className="rounded border-gray-700 bg-gray-900" />
+                            <span className="text-xs text-gray-300">Brute Force Detected</span>
+                          </label>
+                          <label className="flex items-center gap-3">
+                            <input type="checkbox" checked={notifyHoneypot} onChange={(e) => setNotifyHoneypot(e.target.checked)} className="rounded border-gray-700 bg-gray-900" />
+                            <span className="text-xs text-gray-300">Honeypot Triggered</span>
+                          </label>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-4 pt-4 border-t border-white/[0.05]">
+                        <button type="submit" disabled={adminSavingPts} className="btn-primary w-full py-2.5 text-xs font-bold shadow-[0_0_20px_rgba(59,130,246,0.2)] bg-blue-600 hover:bg-blue-500 text-white">
+                          {adminSavingPts ? "Saving..." : "Save Notification Settings"}
                         </button>
                       </div>
                     </form>
@@ -1588,7 +1665,7 @@ export default function DesktopDashboard() {
                     <span className="text-2xl shrink-0">{item.team1_flag}</span>
                     <div className="min-w-0">
                       <div className="text-xs font-bold text-white">{item.team1_country} <span className="text-gray-600">vs</span> {item.team2_country}</div>
-                      <div className="text-[10px] text-gray-600 mt-0.5">{new Date(item.kickoff_time).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}</div>
+                      <div className="text-[10px] text-gray-600 mt-0.5">{new Date(item.kickoff_time).toLocaleDateString("en-GB", { timeZone: "Asia/Bahrain", month: "short", day: "numeric", year: "numeric" })}</div>
                     </div>
                     <span className="text-2xl shrink-0">{item.team2_flag}</span>
                   </div>

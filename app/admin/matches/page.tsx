@@ -21,6 +21,7 @@ type Match = {
   with_reward: number;
   is_frozen: number;
   prediction_open_time: string | null;
+  is_hidden?: number;
 };
 
 export default function MatchesDashboardPage() {
@@ -225,6 +226,34 @@ export default function MatchesDashboardPage() {
     }
   }
 
+  // Toggle visibility directly
+  async function handleToggleVisibility(match: Match) {
+    const updatedStatus = match.is_hidden === 1 ? 0 : 1;
+    try {
+      const res = await fetch(`/api/matches/${match.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          team1_country: match.team1_country,
+          team2_country: match.team2_country,
+          team1_flag: match.team1_flag,
+          team2_flag: match.team2_flag,
+          kickoff_time: match.kickoff_time,
+          prediction_deadline: match.prediction_deadline,
+          prediction_open_time: match.prediction_open_time,
+          with_reward: match.with_reward,
+          is_hidden: updatedStatus,
+        }),
+      });
+
+      if (res.ok) {
+        setMatches(matches.map((m) => (m.id === match.id ? { ...m, is_hidden: updatedStatus } : m)));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   return (
     <div className="max-w-2xl mx-auto p-4 pb-28">
       {/* Header */}
@@ -359,10 +388,10 @@ export default function MatchesDashboardPage() {
                     <span className="text-sm font-bold text-white">{m.team2_country}</span>
                   </div>
                   <div className="text-[11px] text-gray-400 mt-2 space-y-1">
-                    <p>🕒 Kickoff: <span className="font-semibold text-gray-300">{new Date(m.kickoff_time).toLocaleString()}</span></p>
-                    <p>🔒 Locks: <span className="font-semibold text-gray-300">{new Date(m.prediction_deadline).toLocaleString()}</span></p>
+                    <p>🕒 Kickoff: <span className="font-semibold text-gray-300">{new Date(m.kickoff_time).toLocaleString("en-GB", { timeZone: "Asia/Bahrain" })}</span></p>
+                    <p>🔒 Locks: <span className="font-semibold text-gray-300">{new Date(m.prediction_deadline).toLocaleString("en-GB", { timeZone: "Asia/Bahrain" })}</span></p>
                     {m.prediction_open_time && (
-                      <p>🔓 Opens: <span className="font-semibold text-red-400">{new Date(m.prediction_open_time).toLocaleString()}</span></p>
+                      <p>🔓 Opens: <span className="font-semibold text-red-400">{new Date(m.prediction_open_time).toLocaleString("en-GB", { timeZone: "Asia/Bahrain" })}</span></p>
                     )}
                   </div>
                   <div className="flex gap-2 mt-3">
@@ -374,6 +403,11 @@ export default function MatchesDashboardPage() {
                     {m.is_frozen === 1 && (
                       <span className="text-[9px] uppercase font-bold px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/25">
                         ❄️ Frozen
+                      </span>
+                    )}
+                    {m.is_hidden === 1 && (
+                      <span className="text-[9px] uppercase font-bold px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-500 border border-yellow-500/25">
+                        👁️ Hidden
                       </span>
                     )}
                   </div>
@@ -390,6 +424,18 @@ export default function MatchesDashboardPage() {
                     }`}
                   >
                     {m.is_frozen === 1 ? "❄️ Unfreeze" : "🔥 Freeze"}
+                  </button>
+
+                  {/* Visibility Toggle */}
+                  <button
+                    onClick={() => handleToggleVisibility(m)}
+                    className={`py-1.5 px-3 rounded-lg text-xs font-bold border transition-all ${
+                      m.is_hidden === 1
+                        ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-500 hover:bg-yellow-500/20"
+                        : "bg-green-500/10 border-green-500/20 text-green-400 hover:bg-green-500/20"
+                    }`}
+                  >
+                    {m.is_hidden === 1 ? "Publish" : "Hide"}
                   </button>
 
                   {/* Edit Button */}
