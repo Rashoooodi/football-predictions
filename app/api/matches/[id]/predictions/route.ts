@@ -28,7 +28,7 @@ export async function GET(
   let filteredPredictions = predictions;
   if (!isAdmin) {
     const leaderboard = calculateLeaderboard(false);
-    const top5Ids = new Set(leaderboard.slice(0, 5).map(u => u.id));
+    const top5Ids = new Set(leaderboard.slice(0, 5).map(u => u.user_id));
     filteredPredictions = predictions.filter((p: any) => top5Ids.has(p.user_id) || p.user_id === userId);
   }
 
