@@ -16,6 +16,8 @@ fi
 pm2 reload nbr-predictions
 
 # 2. Do "Website things"
+echo "📦 Installing new dependencies..."
+npm install
 echo "📦 Restarting website things (Building Production Bundle)..."
 npm run build
 
