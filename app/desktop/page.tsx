@@ -243,7 +243,7 @@ export default function DesktopDashboard() {
 
   useEffect(() => {
     if (currentUser && leaderboard.length > 0) {
-      const me = leaderboard.find(u => u.user_id === currentUser.id || u.id === currentUser.id);
+      const me = leaderboard.find(u => (u as any).user_id === currentUser.id || u.id === currentUser.id);
       if (me && me.correct_count !== undefined) {
         const lastCountStr = localStorage.getItem("confettiScore");
         const lastCount = lastCountStr ? parseInt(lastCountStr, 10) : -1;
