@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { calculateLeaderboard } from "@/lib/scoring";
 import db from "@/lib/db";
 
 export async function GET(
@@ -24,9 +25,16 @@ export async function GET(
     )
     .all(params.id, isAdmin ? 1 : 0);
 
+  let filteredPredictions = predictions;
+  if (!isAdmin) {
+    const leaderboard = calculateLeaderboard(false);
+    const top5Ids = new Set(leaderboard.slice(0, 5).map(u => u.id));
+    filteredPredictions = predictions.filter((p: any) => top5Ids.has(p.user_id) || p.user_id === userId);
+  }
+
   const deadlinePassed = new Date(match.prediction_deadline) < new Date();
 
-  const maskedPredictions = predictions.map((p: any) => {
+  const maskedPredictions = filteredPredictions.map((p: any) => {
     if (!deadlinePassed && p.user_id !== userId && !isAdmin) {
       return {
         id: p.id,
@@ -42,14 +50,14 @@ export async function GET(
     return { ...p, is_masked: false };
   });
 
-  const takenScores = predictions
+  const takenScores = filteredPredictions
     .filter((p: any) => p.user_id !== userId)
     .map((p: any) => ({
       team1_score: p.team1_score,
       team2_score: p.team2_score,
     }));
 
-  const correct = predictions.filter(
+  const correct = filteredPredictions.filter(
     (p: any) =>
       match.is_finished &&
       p.team1_score === match.team1_score &&

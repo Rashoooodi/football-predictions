@@ -831,7 +831,6 @@ export default function DesktopDashboard() {
             {([
               { key:"admin",       label:"Admin Panel",                            icon:<I.Settings /> },
               { key:"leaderboard", label:"Standings",                             icon:<I.Trophy /> },
-              { key:"family",      label:`Predictors (${familyMembers.length})`,        icon:<I.Users /> },
               { key:"trophy",      label:"🏆 Hall of Fame",                        icon:<I.Star /> },
             ] as { key: string; label: string; icon: React.ReactNode }[]).map(tab => (
               <button key={tab.key} onClick={() => setActiveTab(tab.key as any)}
@@ -928,26 +927,6 @@ export default function DesktopDashboard() {
             )}
 
 
-            {/* ── FAMILY ── */}
-            {activeTab === "family" && (
-              <div>
-                <div className="flex items-center justify-between mb-5"><h2 className="text-2xl font-black font-outfit">NBR <span className="bg-clip-text text-transparent bg-gradient-to-r from-red-400 to-orange-400">Predictors</span></h2><span className="text-[10px] text-gray-500 font-bold">{familyMembers.length} active</span></div>
-                <div className="grid grid-cols-2 xl:grid-cols-3 gap-3">
-                  {familyMembers.map(m => {
-                    const rank = leaderboard.findIndex(u => u.id === m.id) + 1; const pts = leaderboard.find(u => u.id === m.id)?.points ?? 0;
-                    return <button key={m.id} onClick={() => openUserHistory(m)} className="card flex items-center gap-4 hover:border-red-500/20 transition-all duration-200 text-left hover:scale-[1.01] active:scale-[0.99] group">
-                      <div className="relative shrink-0"><Avatar src={m.pfp_path} name={m.name} size="md" />{rank>0&&<span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#0c0d14] border border-white/10 text-[9px] font-black text-gray-400 flex items-center justify-center">#{rank}</span>}</div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 flex-wrap"><span className="text-sm font-bold text-white truncate group-hover:text-red-400 transition-colors">{m.name}</span>{m.is_admin===1&&<Badge color="amber">Admin</Badge>}</div>
-                        <div className="text-[10px] text-gray-600 truncate mt-0.5">@{m.username}</div>
-                        {rank>0&&<div className="text-[10px] text-red-500 font-bold mt-1">{pts} pts</div>}
-                        <div className="text-[9px] text-gray-600 mt-0.5 group-hover:text-gray-400 transition-colors">Tap to see history →</div>
-                      </div>
-                    </button>;
-                  })}
-                </div>
-              </div>
-            )}
 
             {/* ── TROPHY / HALL OF FAME ── */}
             {activeTab === "trophy" && (
