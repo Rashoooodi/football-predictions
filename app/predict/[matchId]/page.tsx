@@ -266,7 +266,13 @@ export default function PredictPage() {
               <p className="text-xs text-gray-500 text-center py-4">No predictions submitted for this match.</p>
             ) : (
               <div className="space-y-2">
-                {allPredictions.map((p) => {
+                {[...allPredictions].sort((a, b) => {
+                  const aMatch = (a.team1_score === match.team1_score && a.team2_score === match.team2_score && match.team1_score !== null);
+                  const bMatch = (b.team1_score === match.team1_score && b.team2_score === match.team2_score && match.team1_score !== null);
+                  if (aMatch && !bMatch) return -1;
+                  if (!aMatch && bMatch) return 1;
+                  return 0;
+                }).map((p) => {
                   const isCorrect =
                     match.is_finished &&
                     p.team1_score === match.team1_score &&
