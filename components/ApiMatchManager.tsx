@@ -32,12 +32,33 @@ export default function ApiMatchManager({ onMatchAdded }: { onMatchAdded: () => 
     fetchGames();
   }, []);
 
-  function getLocalTime(local_date: string) {
+  // World Cup 2026 Stadium Timezone Offsets (Summer 2026)
+  const stadiumOffsets: Record<string, string> = {
+    "1": "-06:00", // Estadio Azteca (Mexico City) - No DST
+    "2": "-04:00", // MetLife (NY/NJ) - EDT
+    "3": "-05:00", // AT&T (Dallas) - CDT
+    "4": "-05:00", // Arrowhead (Kansas City) - CDT
+    "5": "-05:00", // NRG (Houston) - CDT
+    "6": "-04:00", // Mercedes-Benz (Atlanta) - EDT
+    "7": "-07:00", // SoFi (Los Angeles) - PDT
+    "8": "-04:00", // Lincoln Financial (Philadelphia) - EDT
+    "9": "-07:00", // Lumen (Seattle) - PDT
+    "10": "-07:00", // Levi's (SF Bay Area) - PDT
+    "11": "-04:00", // Gillette (Boston) - EDT
+    "12": "-04:00", // Hard Rock (Miami) - EDT
+    "13": "-07:00", // BC Place (Vancouver) - PDT
+    "14": "-06:00", // Estadio BBVA (Monterrey) - No DST
+    "15": "-06:00", // Estadio Akron (Guadalajara) - No DST
+    "16": "-04:00", // BMO Field (Toronto) - EDT
+  };
+
+  function getLocalTime(local_date: string, stadium_id?: string) {
     if (!local_date) return null;
     try {
       const [datePart, timePart] = local_date.split(" ");
       const [m, d, y] = datePart.split("/");
-      return new Date(`${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}T${timePart}:00-04:00`);
+      const offset = (stadium_id && stadiumOffsets[stadium_id]) ? stadiumOffsets[stadium_id] : "-04:00";
+      return new Date(`${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}T${timePart}:00${offset}`);
     } catch {
       return null;
     }
