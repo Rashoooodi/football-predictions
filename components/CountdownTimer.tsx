@@ -16,8 +16,8 @@ export default function CountdownTimer({
     return () => clearInterval(interval);
   }, []);
 
-  const deadlineMs = new Date(deadline + (deadline.endsWith("Z") ? "" : "Z")).getTime();
-  const kickoffMs = new Date(kickoff + (kickoff.endsWith("Z") ? "" : "Z")).getTime();
+  const deadlineMs = new Date(deadline).getTime();
+  const kickoffMs = new Date(kickoff).getTime();
   const liveEnd = kickoffMs + 2 * 60 * 60 * 1000;
 
   function format(ms: number): string {

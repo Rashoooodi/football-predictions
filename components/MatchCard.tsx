@@ -65,9 +65,8 @@ function MatchItem({ match }: { match: Match }) {
           )}
         </div>
         <span className="text-[11px] font-semibold text-gray-500 bg-white/[0.03] px-2 py-0.5 rounded-md border border-white/[0.05]">
-          {new Date(match.kickoff_time + (match.kickoff_time.endsWith("Z") ? "" : "Z")).toLocaleDateString("en-US", { timeZone: "Asia/Bahrain", month: "short", day: "numeric" })} •{" "}
-          {new Date(match.kickoff_time + (match.kickoff_time.endsWith("Z") ? "" : "Z")).toLocaleTimeString("en-US", {
-            timeZone: "Asia/Bahrain",
+          {new Date(match.kickoff_time).toLocaleDateString([], { month: "short", day: "numeric" })} •{" "}
+          {new Date(match.kickoff_time).toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
           })}
