@@ -20,10 +20,10 @@ export async function GET(
       "SELECT p.*, u.name, u.pfp_path, u.is_hidden " +
         "FROM predictions p " +
         "JOIN users u ON p.user_id = u.id " +
-        "WHERE p.match_id = ? AND (u.is_hidden = 0 OR ? = 1) " +
+        "WHERE p.match_id = ? AND u.is_hidden = 0 " +
         "ORDER BY p.submitted_at ASC"
     )
-    .all(params.id, isAdmin ? 1 : 0);
+    .all(params.id);
 
   let filteredPredictions = predictions;
   if (!isAdmin) {
@@ -58,7 +58,7 @@ export async function GET(
     }));
 
   // Ensure we have the full leaderboard for ranking
-  const fullLeaderboard = calculateLeaderboard(isAdmin);
+  const fullLeaderboard = calculateLeaderboard(false);
   const userRankMap = new Map(fullLeaderboard.map(u => [u.user_id, u.rank]));
 
   maskedPredictions.sort((a: any, b: any) => {

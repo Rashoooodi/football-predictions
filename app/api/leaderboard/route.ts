@@ -6,6 +6,6 @@ import { getSession } from "@/lib/auth";
 export async function GET() {
   const session = await getSession();
   const isAdmin = session?.isAdmin || false;
-  const leaderboard = calculateLeaderboard(isAdmin);
+  const leaderboard = calculateLeaderboard(false);
   return NextResponse.json(leaderboard);
 }
