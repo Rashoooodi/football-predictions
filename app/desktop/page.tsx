@@ -797,30 +797,7 @@ export default function DesktopDashboard() {
               </div>
             )}
 
-            {/* Streaks */}
-            {streaks.filter(s => s.current_streak > 0).length > 0 && (
-              <div className="bg-[#0b0c13]/50 border border-white/[0.04] rounded-2xl p-4 space-y-3 shadow-lg shadow-black/30">
-                <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 flex items-center gap-2 border-b border-white/[0.04] pb-2">
-                  <span className="w-3.5 h-3.5 text-rose-400"><I.Flame /></span> Hot Streaks
-                </p>
-                <div className="space-y-2.5 pt-1">
-                  {streaks.filter(s => s.current_streak > 0).sort((a,b) => b.current_streak - a.current_streak).slice(0,4).map((item, i) => {
-                    const u = leaderboard.find(user => user.name === item.name);
-                    return (
-                      <div key={i} className="flex items-center justify-between bg-white/[0.01] hover:bg-white/[0.03] border border-white/[0.02] hover:border-white/[0.05] rounded-xl p-2 transition-all duration-200">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <Avatar src={u?.pfp_path} name={item.name} size="xs" />
-                          <span className="text-xs font-bold text-gray-300 truncate">{item.name}</span>
-                        </div>
-                        <span className="text-[10px] font-black text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2.5 py-0.5 rounded-lg select-none">
-                          {item.current_streak}🔥
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+            {/* Streaks Widget Removed by Request */}
 
             <div className="xl:hidden grid grid-cols-2 gap-3">
               {myRank > 0 && (

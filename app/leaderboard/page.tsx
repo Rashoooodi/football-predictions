@@ -483,48 +483,7 @@ export default function LeaderboardPage() {
         </h1>
       </div>
 
-      {/* Side-by-Side Highlight Widgets (The Predictor & Streaks) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        {stats.scoreProphet ? (
-          <div className="card bg-gradient-to-tr from-[#1b1c2b]/70 to-[#0e1017]/70 border-amber-500/20 shadow-[0_4px_30px_rgba(245,158,11,0.05)] relative overflow-hidden flex items-center gap-4">
-            <div className="absolute right-[-10px] top-[-10px] text-6xl opacity-10 font-bold select-none rotate-12">🔮</div>
-            <div className="w-12 h-12 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center justify-center text-2xl select-none">
-              🔮
-            </div>
-            <div>
-              <p className="text-[10px] font-bold text-amber-400 tracking-wider uppercase">The Predictor</p>
-              <h3 className="text-base font-extrabold text-white font-outfit mt-0.5">{stats.scoreProphet.name}</h3>
-              <p className="text-xs text-gray-400 mt-0.5">{stats.scoreProphet.count} exact scores</p>
-            </div>
-          </div>
-        ) : null}
-
-        {stats.stats.some((s) => s.longest_streak > 0) ? (
-          <div className="card bg-gradient-to-tr from-[#1b1c2b]/70 to-[#0e1017]/70 border-rose-500/20 shadow-[0_4px_30px_rgba(239,68,68,0.05)] relative overflow-hidden flex items-center gap-4">
-            <div className="absolute right-[-10px] top-[-10px] text-6xl opacity-10 font-bold select-none rotate-12">🔥</div>
-            <div className="w-12 h-12 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center justify-center text-2xl select-none">
-              🔥
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-bold text-rose-400 tracking-wider uppercase">Active Streaks</p>
-              <div className="mt-1 space-y-0.5">
-                {stats.stats
-                  .filter((s) => s.longest_streak > 0)
-                  .sort((a, b) => b.longest_streak - a.longest_streak)
-                  .slice(0, 2)
-                  .map((s, idx) => (
-                    <div key={s.user_id} className="flex justify-between items-center text-xs">
-                      <span className="font-semibold text-white truncate mr-2">{s.name}</span>
-                      <span className="text-rose-400 font-bold shrink-0">
-                        {s.current_streak} 🔥 <span className="text-gray-500 font-normal">({s.longest_streak} max)</span>
-                      </span>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </div>
+      {/* Widgets removed by request */}
 
       {/* Modern 3D podium layout for ranks 1, 2, 3 */}
       {leaderboard.length > 0 ? (
