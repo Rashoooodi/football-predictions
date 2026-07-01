@@ -18,7 +18,7 @@ export default function PredictorsPage() {
   useEffect(() => {
     fetch("/api/family")
       .then((r) => r.json())
-      .then(setMembers);
+      .then((data) => setMembers(data.filter((m: any) => m.is_hidden === 0)));
   }, []);
 
   return (
