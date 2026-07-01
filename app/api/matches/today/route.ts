@@ -15,13 +15,16 @@ export async function GET() {
   const isAdmin = session?.isAdmin || false;
   const nowLocal = getLocalNowString();
 
-  let query = "SELECT * FROM matches WHERE (is_finished = 0 OR kickoff_time >= ?) AND (prediction_open_time IS NULL OR prediction_open_time <= ?)";
-  if (!isAdmin) {
-    query += " AND is_hidden = 0";
-  }
-  query += " ORDER BY kickoff_time ASC LIMIT 10";
+  let query = "SELECT * FROM matches WHERE (is_finished = 0 OR kickoff_time >= ?)";
+  let params: any[] = [nowLocal];
 
-  const matches = db.prepare(query).all(nowLocal, nowLocal);
+  if (!isAdmin) {
+    query += " AND (prediction_open_time IS NULL OR prediction_open_time <= ?) AND is_hidden = 0";
+    params.push(nowLocal);
+  }
+  query += " ORDER BY kickoff_time ASC LIMIT 30";
+
+  const matches = db.prepare(query).all(...params);
 
   return NextResponse.json(matches);
 }
