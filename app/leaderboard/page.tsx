@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import MatchCard from "@/components/MatchCard";
+import confetti from "canvas-confetti";
+import StatsModal from "@/components/StatsModal";
 
 type LeaderboardEntry = {
   user_id: number;
@@ -45,9 +47,9 @@ export default function LeaderboardPage() {
   const [announcementObj, setAnnouncementObj] = useState<{message: string, emoji: string, color: string} | null>(null);
   const [showNotifBanner, setShowNotifBanner] = useState(false);
 
-  // PWA states
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isStandalone, setIsStandalone] = useState(true); // default true to avoid layout flicker
+  const [showStatsModal, setShowStatsModal] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
 
   // Profile Edit modal states
@@ -69,6 +71,33 @@ export default function LeaderboardPage() {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (me && leaderboard.length > 0) {
+      const myLb = leaderboard.find(u => u.user_id === me.id || (u as any).id === me.id);
+      if (myLb && myLb.correct_count !== undefined) {
+        const lastCountStr = localStorage.getItem("confettiScore");
+        const lastCount = lastCountStr ? parseInt(lastCountStr, 10) : -1;
+        if (lastCount !== -1 && myLb.correct_count > lastCount) {
+          const duration = 3000;
+          const end = Date.now() + duration;
+          (function frame() {
+            confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#ef4444', '#fca5a5', '#ffffff'], zIndex: 9999 });
+            confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#ef4444', '#fca5a5', '#ffffff'], zIndex: 9999 });
+            if (Date.now() < end) requestAnimationFrame(frame);
+          }());
+          try {
+            const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3");
+            audio.volume = 0.5;
+            audio.play().catch(()=>{});
+          } catch (e) {}
+        }
+        if (lastCount === -1 || myLb.correct_count > lastCount) {
+          localStorage.setItem("confettiScore", myLb.correct_count.toString());
+        }
+      }
+    }
+  }, [me, leaderboard]);
 
   useEffect(() => {
     async function load() {
@@ -406,6 +435,9 @@ export default function LeaderboardPage() {
         
         {/* Quick actions/Admin config */}
         <div className="flex gap-2">
+          <button onClick={() => setShowStatsModal(true)} className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:bg-emerald-500/10 hover:border-emerald-500/20 text-emerald-400 transition-all duration-300" title="My Stats">
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+          </button>
           {me?.is_admin ? (
             <Link href="/admin" className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.08] hover:border-red-500/20 text-gray-300 hover:text-red-400 transition-all duration-300" title="Admin Panel">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -795,6 +827,10 @@ export default function LeaderboardPage() {
         </div>
       )}
 
+      {/* Stats Modal */}
+      {showStatsModal && me && (
+        <StatsModal onClose={() => setShowStatsModal(false)} userName={me.name} />
+      )}
     </div>
   );
 }

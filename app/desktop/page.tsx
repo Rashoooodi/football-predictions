@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import CountrySelector from "@/components/CountrySelector";
 import ApiMatchManager from "@/components/ApiMatchManager";
+import confetti from "canvas-confetti";
+import StatsModal from "@/components/StatsModal";
 
 /* ─── Types ─────────────────────────────────────────────────────── */
 type Country = { name: string; flag: string };
@@ -106,6 +108,7 @@ export default function DesktopDashboard() {
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
   const [checking, setChecking] = useState(true);
+  const [showStatsModal, setShowStatsModal] = useState(false);
 
   /* Data */
   const [leaderboard, setLeaderboard] = useState<User[]>([]);
@@ -237,6 +240,35 @@ export default function DesktopDashboard() {
       if (liveRefreshRef.current) clearInterval(liveRefreshRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (currentUser && leaderboard.length > 0) {
+      const me = leaderboard.find(u => u.user_id === currentUser.id || u.id === currentUser.id);
+      if (me && me.correct_count !== undefined) {
+        const lastCountStr = localStorage.getItem("confettiScore");
+        const lastCount = lastCountStr ? parseInt(lastCountStr, 10) : -1;
+        
+        if (lastCount !== -1 && me.correct_count > lastCount) {
+          const duration = 3000;
+          const end = Date.now() + duration;
+          (function frame() {
+            confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#ef4444', '#fca5a5', '#ffffff'], zIndex: 9999 });
+            confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#ef4444', '#fca5a5', '#ffffff'], zIndex: 9999 });
+            if (Date.now() < end) requestAnimationFrame(frame);
+          }());
+          try {
+            const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3");
+            audio.volume = 0.5;
+            audio.play().catch(()=>{});
+          } catch (e) {}
+        }
+        
+        if (lastCount === -1 || me.correct_count > lastCount) {
+          localStorage.setItem("confettiScore", me.correct_count.toString());
+        }
+      }
+    }
+  }, [currentUser, leaderboard]);
 
   /* ── Load all data ── */
   async function loadAll() {
@@ -721,6 +753,8 @@ export default function DesktopDashboard() {
           <button onClick={requestNotifications} disabled={notifLoading || notifPerm === "granted"} title={notifPerm === "granted" ? "Notifications on" : "Enable notifications"} className={`w-9 h-9 flex items-center justify-center rounded-xl border transition-all duration-200 ${notifPerm === "granted" ? "bg-red-500/10 border-red-500/20 text-red-400" : "bg-white/[0.02] border-white/[0.06] hover:bg-amber-500/10 hover:border-amber-500/20 text-gray-500 hover:text-amber-400"}`}>
             <div className="w-4 h-4">{notifPerm === "denied" ? <I.BellOff /> : <I.Bell />}</div>
           </button>
+          {/* My Stats */}
+          <button onClick={() => setShowStatsModal(true)} title="My Stats" className="flex items-center gap-1.5 bg-white/[0.02] border border-white/[0.06] hover:border-emerald-500/20 hover:bg-emerald-500/10 py-1.5 px-3 rounded-xl transition-all duration-200 active:scale-95 text-emerald-400 font-bold text-[11px]"><svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg> <span>My Stats</span></button>
           {/* Profile */}
           <button onClick={() => { setProfName(currentUser.name); setProfFile(null); setProfError(""); setShowProfile(true); }} className="flex items-center gap-2.5 bg-white/[0.02] border border-white/[0.06] hover:border-red-500/20 hover:bg-white/[0.04] py-2 pl-2.5 pr-3.5 rounded-xl transition-all duration-200 active:scale-95">
             <Avatar src={currentUser.pfp_path} name={currentUser.name} size="sm" />
@@ -1687,6 +1721,11 @@ export default function DesktopDashboard() {
             <div className="flex gap-3 w-full"><button onClick={()=>setCropSrc(null)} className="btn-secondary flex-1 py-2.5 text-xs font-bold">Cancel</button><button onClick={cropConfirm} className="btn-primary flex-1 py-2.5 text-xs font-bold">Crop & Apply</button></div>
           </div>
         </div>
+      )}
+
+      {/* Stats Modal */}
+      {showStatsModal && currentUser && (
+        <StatsModal onClose={() => setShowStatsModal(false)} userName={currentUser.name} />
       )}
     </div>
   );
