@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import db from "@/lib/db";
+import { calculateLeaderboard } from "@/lib/scoring";
 
 export const dynamic = "force-dynamic";
 
@@ -12,50 +13,53 @@ export async function GET() {
   }
 
   try {
-    const query = `
-      WITH RankedUsers AS (
-        SELECT id, name, username, total_points, RANK() OVER (ORDER BY total_points DESC) as rank
-        FROM users
-        WHERE is_admin = 0
-      )
-      SELECT
-        r.name as Name,
-        r.username as Username,
-        m.team1_country || ' vs ' || m.team2_country as MatchName,
-        p.team1_score || '-' || p.team2_score as Prediction,
-        p.awarded_points as PointsAdded,
-        r.total_points as TotalPoints,
-        r.rank as TournamentRank,
-        m.status as MatchStatus
-      FROM RankedUsers r
-      JOIN predictions p ON r.id = p.user_id
+    const firstPtsSetting = db.prepare("SELECT value FROM settings WHERE key = 'first_correct_points'").get() as any;
+    const otherPtsSetting = db.prepare("SELECT value FROM settings WHERE key = 'other_correct_points'").get() as any;
+    const firstPts = firstPtsSetting ? parseInt(firstPtsSetting.value) : 2;
+    const otherPts = otherPtsSetting ? parseInt(otherPtsSetting.value) : 1;
+
+    // Get the authoritative leaderboard to map total points and rank
+    const leaderboard = calculateLeaderboard(true); 
+    const userMap = new Map(leaderboard.map(u => [u.user_id, u]));
+
+    // Query all predictions with window function to figure out who was first per match
+    const predictions = db.prepare(`
+      SELECT p.*, m.team1_country, m.team2_country, m.is_finished, m.team1_score as actual_t1, m.team2_score as actual_t2,
+             ROW_NUMBER() OVER(PARTITION BY p.match_id ORDER BY p.submitted_at ASC) as rnk
+      FROM predictions p
       JOIN matches m ON p.match_id = m.id
-      ORDER BY r.rank ASC, m.id ASC
-    `;
+      ORDER BY m.id ASC
+    `).all() as any[];
 
-    const rows = db.prepare(query).all() as any[];
-
-    // CSV Header
     let csv = "Name,Username,Match,Prediction,WINNER?,Points added,Total points,Tournament rank\n";
 
-    for (const row of rows) {
-      const name = `"${(row.Name || "").replace(/"/g, '""')}"`;
-      const username = `"${(row.Username || "").replace(/"/g, '""')}"`;
-      const matchName = `"${row.MatchName}"`;
-      const prediction = `"${row.Prediction}"`;
+    for (const p of predictions) {
+      const user = userMap.get(p.user_id);
+      if (!user) continue; // Skip if user is somehow missing (e.g. admin)
+
+      const name = `"${(user.name || "").replace(/"/g, '""')}"`;
+      const username = `"${(user.username || "").replace(/"/g, '""')}"`;
+      const matchName = `"${p.team1_country} vs ${p.team2_country}"`;
+      const predictionStr = `"${p.team1_score}-${p.team2_score}"`;
       
-      let winnerStatus = "N/A";
-      if (row.MatchStatus === "completed") {
-        winnerStatus = row.PointsAdded && row.PointsAdded > 0 ? "✅ Winner" : "❌ Didn't gain points";
-      } else {
-        winnerStatus = "⏳ Pending";
+      let winnerStatus = "⏳ Pending";
+      let pointsAdded = 0;
+
+      if (p.is_finished === 1) {
+        const isCorrect = p.team1_score === p.actual_t1 && p.team2_score === p.actual_t2;
+        if (isCorrect) {
+          winnerStatus = "✅ Winner";
+          pointsAdded = p.rnk === 1 ? firstPts : otherPts;
+        } else {
+          winnerStatus = "❌ Didn't gain points";
+          pointsAdded = 0;
+        }
       }
 
-      const pointsAdded = row.MatchStatus === "completed" ? (row.PointsAdded || 0) : 0;
-      const totalPoints = row.TotalPoints || 0;
-      const rank = `#${row.TournamentRank}`;
+      const totalPoints = user.points || 0;
+      const rank = `#${user.rank}`;
 
-      csv += `${name},${username},${matchName},${prediction},"${winnerStatus}",${pointsAdded},${totalPoints},"${rank}"\n`;
+      csv += `${name},${username},${matchName},${predictionStr},"${winnerStatus}",${pointsAdded},${totalPoints},"${rank}"\n`;
     }
 
     return new NextResponse(csv, {

@@ -1,4 +1,15 @@
+"use client";
+
+import { useEffect } from "react";
+
 export default function MaintenancePage() {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      window.location.reload();
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#07080f] p-4 text-center">
       <div className="space-y-6 max-w-md animate-in fade-in slide-in-from-bottom-4 duration-500">
