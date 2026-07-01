@@ -40,14 +40,15 @@ export async function GET() {
       }
     }
 
-    // Get team accuracy stats for this user
+    // Get team accuracy stats and recent form for this user
     const userPredictions = db.prepare(`
       SELECT p.team1_score as p_s1, p.team2_score as p_s2,
              m.team1_score as m_s1, m.team2_score as m_s2,
-             m.team1_country, m.team2_country
+             m.team1_country, m.team2_country, m.kickoff_time
       FROM predictions p
       JOIN matches m ON p.match_id = m.id
       WHERE p.user_id = ? AND m.is_finished = 1
+      ORDER BY m.kickoff_time DESC
     `).all(session.userId) as any[];
 
     const teamStats = new Map<string, { correct: number; total: number }>();
@@ -76,9 +77,42 @@ export async function GET() {
       rate: stats.total > 0 ? (stats.correct / stats.total) * 100 : 0
     })).sort((a, b) => b.rate - a.rate || b.total - a.total);
 
+    // Calculate Form Guide (last 5 matches)
+    const recentForm = userPredictions
+      .slice(0, 5)
+      .reverse()
+      .map(row => row.p_s1 === row.m_s1 && row.p_s2 === row.m_s2);
+
+    // Gamification Badges
+    const badges: string[] = [];
+    const totalFinished = userPredictions.length;
+    const totalCorrect = userPredictions.filter(r => r.p_s1 === r.m_s1 && r.p_s2 === r.m_s2).length;
+    
+    // Streaks (from most recent)
+    let currentWinStreak = 0;
+    let currentLossStreak = 0;
+    for (const row of userPredictions) {
+      const isCorrect = row.p_s1 === row.m_s1 && row.p_s2 === row.m_s2;
+      if (isCorrect) {
+        if (currentLossStreak > 0) break;
+        currentWinStreak++;
+      } else {
+        if (currentWinStreak > 0) break;
+        currentLossStreak++;
+      }
+    }
+
+    if (currentWinStreak >= 3) badges.push("On Fire 🔥");
+    if (currentLossStreak >= 3) badges.push("Ice Cold 🧊");
+    if (totalFinished >= 5 && (totalCorrect / totalFinished) >= 0.25) badges.push("Sharpshooter 🎯");
+    if (totalFinished >= 5 && (totalCorrect / totalFinished) >= 0.40) badges.push("Oracle 🔮");
+    if (totalFinished >= 15) badges.push("Veteran 🏆");
+
     return NextResponse.json({
       progression,
-      accuracy
+      accuracy,
+      recentForm,
+      badges
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

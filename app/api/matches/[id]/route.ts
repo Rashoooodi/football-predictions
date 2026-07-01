@@ -40,6 +40,11 @@ export async function PUT(
   const isFrozen = body.is_frozen !== undefined ? (body.is_frozen ? 1 : 0) : 0;
   const isHidden = body.is_hidden !== undefined ? (body.is_hidden ? 1 : 0) : (match as any).is_hidden;
 
+  // Manual Override Scores
+  const team1Score = body.team1_score !== undefined && body.team1_score !== "" ? parseInt(body.team1_score) : (match as any).team1_score;
+  const team2Score = body.team2_score !== undefined && body.team2_score !== "" ? parseInt(body.team2_score) : (match as any).team2_score;
+  const isFinished = (team1Score !== null && team2Score !== null) ? 1 : (match as any).is_finished;
+
   if (!team1 || !team2 || !team1Flag || !team2Flag || !kickoffTime || !predictionDeadline) {
     return NextResponse.json({ error: "Required fields missing" }, { status: 400 });
   }
@@ -47,7 +52,8 @@ export async function PUT(
   try {
     db.prepare(
       "UPDATE matches SET team1_country = ?, team2_country = ?, team1_flag = ?, team2_flag = ?, " +
-        "kickoff_time = ?, prediction_deadline = ?, with_reward = ?, is_frozen = ?, prediction_open_time = ?, is_hidden = ? WHERE id = ?"
+        "kickoff_time = ?, prediction_deadline = ?, with_reward = ?, is_frozen = ?, prediction_open_time = ?, is_hidden = ?, " +
+        "team1_score = ?, team2_score = ?, is_finished = ? WHERE id = ?"
     ).run(
       team1,
       team2,
@@ -59,6 +65,9 @@ export async function PUT(
       isFrozen,
       predictionOpenTime,
       isHidden,
+      team1Score,
+      team2Score,
+      isFinished,
       params.id
     );
 

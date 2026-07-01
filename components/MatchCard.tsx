@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import CountdownTimer from "./CountdownTimer";
+import { getCountryColor } from "@/lib/colors";
 
 type Match = {
   id: number;
@@ -50,12 +51,23 @@ function StatusBadge({ match }: { match: Match }) {
 }
 
 function MatchItem({ match }: { match: Match }) {
+  const color1 = getCountryColor(match.team1_country);
+  const color2 = getCountryColor(match.team2_country);
+
   return (
     <Link
       href={"/predict/" + match.id}
-      className="block p-4 hover:bg-white/[0.02] active:scale-[0.99] transition-all duration-300 rounded-xl group"
+      className="block p-4 hover:bg-white/[0.02] active:scale-[0.99] transition-all duration-300 rounded-xl group relative overflow-hidden"
     >
-      <div className="flex items-center justify-between mb-3">
+      {/* Dynamic Glow Background */}
+      <div 
+        className="absolute inset-0 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-500 pointer-events-none"
+        style={{
+          background: `linear-gradient(135deg, ${color1} 0%, transparent 40%, transparent 60%, ${color2} 100%)`
+        }}
+      />
+      
+      <div className="relative z-10 flex items-center justify-between mb-3">
         <div className="flex items-center gap-1.5">
           <StatusBadge match={match} />
           {match.with_reward === 1 && (
@@ -110,7 +122,7 @@ function MatchItem({ match }: { match: Match }) {
           </span>
         </div>
       </div>
-      <div className="mt-3 border-t border-white/[0.03] pt-2">
+      <div className="relative z-10 mt-3 border-t border-white/[0.03] pt-2">
         <CountdownTimer deadline={match.prediction_deadline} kickoff={match.kickoff_time} />
       </div>
     </Link>

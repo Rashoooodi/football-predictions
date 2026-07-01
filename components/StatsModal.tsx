@@ -6,6 +6,8 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "rec
 type StatsResponse = {
   progression: { date: string; points: number }[];
   accuracy: { team: string; correct: number; total: number; rate: number }[];
+  recentForm: boolean[];
+  badges: string[];
 };
 
 export default function StatsModal({ onClose, userName }: { onClose: () => void, userName: string }) {
@@ -47,6 +49,38 @@ export default function StatsModal({ onClose, userName }: { onClose: () => void,
             <div className="text-rose-400 text-xs text-center py-10 bg-rose-500/10 rounded-xl">{error}</div>
           ) : data && (
             <div className="space-y-6">
+              {/* Badges & Form */}
+              {(data.badges?.length > 0 || data.recentForm?.length > 0) && (
+                <div className="card bg-white/[0.01] border-white/[0.03] flex flex-col sm:flex-row gap-6">
+                  {data.badges?.length > 0 && (
+                    <div className="flex-1">
+                      <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-3">Badges</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {data.badges.map((badge, i) => (
+                          <span key={i} className="text-[10px] font-extrabold uppercase tracking-wider text-white bg-white/[0.05] border border-white/[0.1] px-2.5 py-1 rounded-full shadow-sm">
+                            {badge}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {data.recentForm?.length > 0 && (
+                    <div className="shrink-0">
+                      <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-3">Recent Form</h3>
+                      <div className="flex items-center gap-1.5 bg-[#07080f] px-3 py-2 rounded-xl border border-white/[0.05]">
+                        {data.recentForm.map((isWin, i) => (
+                          <div 
+                            key={i} 
+                            className={`w-3.5 h-3.5 rounded-full shadow-inner ${isWin ? 'bg-emerald-500/80 border border-emerald-400' : 'bg-rose-500/80 border border-rose-400'}`}
+                            title={isWin ? "Exact Score (Correct)" : "Missed"}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Line Chart */}
               <div className="card bg-white/[0.01] border-white/[0.03]">
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-4">Points Progression</h3>

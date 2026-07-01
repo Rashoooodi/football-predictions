@@ -4,6 +4,44 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import CountdownTimer from "@/components/CountdownTimer";
 
+function triggerHaptic(pattern: number | number[]) {
+  if (typeof window !== "undefined" && window.navigator && window.navigator.vibrate) {
+    try { window.navigator.vibrate(pattern); } catch (e) {}
+  }
+}
+
+function CrowdConsensus({ scores, t1, t2 }: { scores: {team1_score: number, team2_score: number}[], t1: string, t2: string }) {
+  if (!scores || scores.length === 0) return null;
+  
+  let t1Wins = 0, t2Wins = 0, draws = 0;
+  scores.forEach(s => {
+    if (s.team1_score > s.team2_score) t1Wins++;
+    else if (s.team2_score > s.team1_score) t2Wins++;
+    else draws++;
+  });
+  
+  const total = scores.length;
+  const t1Pct = Math.round((t1Wins / total) * 100);
+  const t2Pct = Math.round((t2Wins / total) * 100);
+  const drawPct = Math.round((draws / total) * 100);
+  
+  return (
+    <div className="mt-6 pt-6 border-t border-white/[0.05]">
+      <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-3 text-center">Crowd Consensus</h4>
+      <div className="flex h-2.5 rounded-full overflow-hidden bg-white/[0.02] border border-white/[0.05]">
+        {t1Pct > 0 && <div style={{width: `${t1Pct}%`}} className="bg-sky-500 transition-all duration-1000" title={`${t1} Win: ${t1Pct}%`} />}
+        {drawPct > 0 && <div style={{width: `${drawPct}%`}} className="bg-gray-400 transition-all duration-1000" title={`Draw: ${drawPct}%`} />}
+        {t2Pct > 0 && <div style={{width: `${t2Pct}%`}} className="bg-rose-500 transition-all duration-1000" title={`${t2} Win: ${t2Pct}%`} />}
+      </div>
+      <div className="flex justify-between text-[9px] font-extrabold text-gray-400 mt-2 px-1">
+        <span className="text-sky-400">{t1Pct}% {t1.substring(0,3).toUpperCase()}</span>
+        <span>{drawPct}% DRAW</span>
+        <span className="text-rose-400">{t2Pct}% {t2.substring(0,3).toUpperCase()}</span>
+      </div>
+    </div>
+  );
+}
+
 type Match = {
   id: number;
   team1_country: string;
@@ -91,15 +129,41 @@ export default function PredictPage() {
     });
 
     if (res.ok) {
+      triggerHaptic([30, 50, 30]);
       router.push("/leaderboard");
     } else {
+      triggerHaptic(50);
       const data = await res.json();
       setError(data.error);
     }
     setLoading(false);
   }
 
-  if (!match) return <div className="p-4">Loading...</div>;
+  if (!match) {
+    return (
+      <div className="max-w-2xl mx-auto p-4 pb-28 animate-pulse">
+        <div className="h-10 bg-white/[0.05] w-1/3 rounded-lg mb-8 mt-2" />
+        <div className="card bg-[#0c0d14]/50 border-white/[0.06] p-6 mb-8">
+          <div className="flex justify-between items-center mb-6">
+            <div className="h-6 w-20 bg-white/[0.05] rounded-full" />
+            <div className="h-5 w-24 bg-white/[0.05] rounded-md" />
+          </div>
+          <div className="flex justify-between items-center px-4">
+            <div className="flex flex-col items-center">
+              <div className="w-16 h-16 bg-white/[0.05] rounded-full mb-3" />
+              <div className="h-4 w-24 bg-white/[0.05] rounded" />
+            </div>
+            <div className="h-8 w-16 bg-white/[0.05] rounded-full" />
+            <div className="flex flex-col items-center">
+              <div className="w-16 h-16 bg-white/[0.05] rounded-full mb-3" />
+              <div className="h-4 w-24 bg-white/[0.05] rounded" />
+            </div>
+          </div>
+        </div>
+        <div className="h-32 bg-white/[0.05] rounded-2xl w-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-md mx-auto p-4 pb-28">
@@ -280,7 +344,7 @@ export default function PredictPage() {
             <div className="flex items-center gap-2 bg-white/[0.02] border border-white/[0.05] p-1.5 rounded-2xl shadow-inner">
               <button
                 type="button"
-                onClick={() => setScore1(String(Math.max(0, Number(score1) - 1)))}
+                onClick={() => { setScore1(String(Math.max(0, Number(score1) - 1))); triggerHaptic(15); }}
                 className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] text-white flex items-center justify-center text-lg font-black transition-all active:scale-95"
               >
                 -
@@ -290,12 +354,12 @@ export default function PredictPage() {
                 min="0"
                 max="20"
                 value={score1}
-                onChange={(e) => setScore1(e.target.value)}
-                className="bg-transparent border-0 font-mono text-center text-3xl font-black w-14 text-white focus:outline-none focus:ring-0"
+                onChange={(e) => { setScore1(e.target.value); triggerHaptic(15); }}
+                className="bg-transparent border-0 font-mono text-center text-3xl font-black w-14 text-white focus:outline-none focus:ring-0 transition-transform active:scale-110"
               />
               <button
                 type="button"
-                onClick={() => setScore1(String(Math.min(20, Number(score1) + 1)))}
+                onClick={() => { setScore1(String(Math.min(20, Number(score1) + 1))); triggerHaptic(15); }}
                 className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] text-white flex items-center justify-center text-lg font-black transition-all active:scale-95"
               >
                 +
@@ -308,7 +372,7 @@ export default function PredictPage() {
             <div className="flex items-center gap-2 bg-white/[0.02] border border-white/[0.05] p-1.5 rounded-2xl shadow-inner">
               <button
                 type="button"
-                onClick={() => setScore2(String(Math.max(0, Number(score2) - 1)))}
+                onClick={() => { setScore2(String(Math.max(0, Number(score2) - 1))); triggerHaptic(15); }}
                 className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] text-white flex items-center justify-center text-lg font-black transition-all active:scale-95"
               >
                 -
@@ -318,12 +382,12 @@ export default function PredictPage() {
                 min="0"
                 max="20"
                 value={score2}
-                onChange={(e) => setScore2(e.target.value)}
-                className="bg-transparent border-0 font-mono text-center text-3xl font-black w-14 text-white focus:outline-none focus:ring-0"
+                onChange={(e) => { setScore2(e.target.value); triggerHaptic(15); }}
+                className="bg-transparent border-0 font-mono text-center text-3xl font-black w-14 text-white focus:outline-none focus:ring-0 transition-transform active:scale-110"
               />
               <button
                 type="button"
-                onClick={() => setScore2(String(Math.min(20, Number(score2) + 1)))}
+                onClick={() => { setScore2(String(Math.min(20, Number(score2) + 1))); triggerHaptic(15); }}
                 className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] text-white flex items-center justify-center text-lg font-black transition-all active:scale-95"
               >
                 +
@@ -332,10 +396,18 @@ export default function PredictPage() {
           </div>
 
           {existing ? (
-            <div className="bg-red-500/5 border border-red-500/10 text-red-400 text-xs py-2 px-4 rounded-xl text-center font-medium">
+            <div className="bg-red-500/5 border border-red-500/10 text-red-400 text-xs py-2 px-4 rounded-xl text-center font-medium animate-fade-in">
               Saved prediction: <span className="font-bold">{existing.team1_score} - {existing.team2_score}</span>
             </div>
           ) : null}
+
+          {existing && (
+            <CrowdConsensus 
+              scores={existing ? [...takenScores, existing] : takenScores} 
+              t1={match.team1_country} 
+              t2={match.team2_country} 
+            />
+          )}
 
 
           {error ? (

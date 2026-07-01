@@ -48,6 +48,8 @@ export default function MatchesDashboardPage() {
   const [editPredictionOpenTime, setEditPredictionOpenTime] = useState("");
   const [editWithReward, setEditWithReward] = useState(true);
   const [editIsFrozen, setEditIsFrozen] = useState(false);
+  const [editTeam1Score, setEditTeam1Score] = useState("");
+  const [editTeam2Score, setEditTeam2Score] = useState("");
   const [editError, setEditError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -163,6 +165,8 @@ export default function MatchesDashboardPage() {
     setEditPredictionOpenTime(match.prediction_open_time || "");
     setEditWithReward(match.with_reward === 1);
     setEditIsFrozen(match.is_frozen === 1);
+    setEditTeam1Score(match.team1_score !== null ? String(match.team1_score) : "");
+    setEditTeam2Score(match.team2_score !== null ? String(match.team2_score) : "");
     setEditError("");
   }
 
@@ -193,6 +197,8 @@ export default function MatchesDashboardPage() {
           prediction_open_time: editPredictionOpenTime || null,
           with_reward: editWithReward ? 1 : 0,
           is_frozen: editIsFrozen ? 1 : 0,
+          team1_score: editTeam1Score !== "" ? editTeam1Score : null,
+          team2_score: editTeam2Score !== "" ? editTeam2Score : null,
         }),
       });
 
@@ -520,6 +526,31 @@ export default function MatchesDashboardPage() {
                   className="input text-xs py-2.5 px-3 bg-[#08090f] border-white/[0.08]"
                   required
                 />
+              </div>
+
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-rose-400 mb-1.5 ml-1">Final Score {editTeam1?.name || "T1"}</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Auto-syncs"
+                    value={editTeam1Score}
+                    onChange={(e) => setEditTeam1Score(e.target.value)}
+                    className="input text-xs py-2.5 px-3 bg-rose-500/5 border-rose-500/20 text-rose-400 font-bold"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-rose-400 mb-1.5 ml-1">Final Score {editTeam2?.name || "T2"}</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Auto-syncs"
+                    value={editTeam2Score}
+                    onChange={(e) => setEditTeam2Score(e.target.value)}
+                    className="input text-xs py-2.5 px-3 bg-rose-500/5 border-rose-500/20 text-rose-400 font-bold"
+                  />
+                </div>
               </div>
 
               <div className="flex gap-4">
