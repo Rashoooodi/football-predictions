@@ -28,11 +28,17 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const team1 = body.team1;
   const team2 = body.team2;
-  const kickoffTime = body.kickoffTime;
-  const predictionDeadline = body.predictionDeadline;
+  const ensureTimezone = (ts: string | null) => {
+    if (!ts) return ts;
+    if (ts.includes("+") || ts.includes("Z")) return ts;
+    return `${ts}+03:00`;
+  };
+
+  const kickoffTime = ensureTimezone(body.kickoffTime);
+  const predictionDeadline = ensureTimezone(body.predictionDeadline);
+  const predictionOpenTime = ensureTimezone(body.predictionOpenTime || null);
   const withReward = body.withReward !== false ? 1 : 0;
 
-  const predictionOpenTime = body.predictionOpenTime || null;
   const api_id = body.api_id || null;
   const is_hidden = body.is_hidden !== undefined ? body.is_hidden : 0;
 

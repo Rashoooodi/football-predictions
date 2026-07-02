@@ -32,11 +32,17 @@ export async function PUT(
   const team2 = body.team2_country;
   const team1Flag = body.team1_flag;
   const team2Flag = body.team2_flag;
-  const kickoffTime = body.kickoff_time;
-  const predictionDeadline = body.prediction_deadline;
+  const ensureTimezone = (ts: string | null) => {
+    if (!ts) return ts;
+    if (ts.includes("+") || ts.includes("Z")) return ts;
+    return `${ts}+03:00`;
+  };
+
+  const kickoffTime = ensureTimezone(body.kickoff_time);
+  const predictionDeadline = ensureTimezone(body.prediction_deadline);
   const withReward = body.with_reward === 1 || body.with_reward === true ? 1 : 0;
 
-  const predictionOpenTime = body.prediction_open_time || null;
+  const predictionOpenTime = ensureTimezone(body.prediction_open_time || null);
   const isFrozen = body.is_frozen !== undefined ? (body.is_frozen ? 1 : 0) : 0;
   const isHidden = body.is_hidden !== undefined ? (body.is_hidden ? 1 : 0) : (match as any).is_hidden;
 
