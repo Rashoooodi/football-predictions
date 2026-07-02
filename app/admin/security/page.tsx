@@ -8,16 +8,44 @@ export default function MobileSecurity() {
   const [logs, setLogs] = useState<any[]>([]);
   const [bannedIps, setBannedIps] = useState<any[]>([]);
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingLogs, setLoadingLogs] = useState(false);
+
   useEffect(() => {
     fetch("/api/admin/settings").then(r => r.json()).then(d => {
       setBanMessage(d.ban_message || "I thought of this... try again 🙊 can't hack me that easily");
     });
-    loadLogs();
+    fetch("/api/admin/ips/ban").then(r => r.json()).then(setBannedIps).catch(console.error);
+    fetchLogs(true);
   }, []);
 
-  async function loadLogs() {
-    fetch("/api/admin/audit").then(r => r.json()).then(setLogs).catch(console.error);
-    fetch("/api/admin/ips/ban").then(r => r.json()).then(setBannedIps).catch(console.error);
+  useEffect(() => {
+    const delay = setTimeout(() => {
+      fetchLogs(true);
+    }, 500);
+    return () => clearTimeout(delay);
+  }, [searchQuery]);
+
+  async function fetchLogs(reset = false) {
+    const targetPage = reset ? 1 : page + (reset ? 0 : 1);
+    setLoadingLogs(true);
+    try {
+      const res = await fetch(`/api/admin/audit?q=${encodeURIComponent(searchQuery)}&page=${targetPage}`);
+      const d = await res.json();
+      if (reset) {
+        setLogs(d);
+        setPage(1);
+      } else {
+        setLogs(prev => [...prev, ...d]);
+        setPage(targetPage);
+      }
+      setHasMore(d.length === 50);
+    } catch (e) {
+      console.error(e);
+    }
+    setLoadingLogs(false);
   }
 
   async function saveSettings(e: React.FormEvent) {
@@ -40,7 +68,8 @@ export default function MobileSecurity() {
       body: JSON.stringify({ ip })
     });
     alert(`Banned ${ip}`);
-    loadLogs();
+    fetch("/api/admin/ips/ban").then(r => r.json()).then(setBannedIps).catch(console.error);
+    fetchLogs(true);
   }
 
   async function unbanIp(ip: string) {
@@ -51,7 +80,8 @@ export default function MobileSecurity() {
       body: JSON.stringify({ ip })
     });
     alert(`Unbanned ${ip}`);
-    loadLogs();
+    fetch("/api/admin/ips/ban").then(r => r.json()).then(setBannedIps).catch(console.error);
+    fetchLogs(true);
   }
 
   return (
@@ -88,16 +118,25 @@ export default function MobileSecurity() {
       </div>
 
       {/* Audit Logs */}
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-black text-white font-outfit">Audit Logs</h2>
-        <button onClick={loadLogs} className="text-xs font-bold text-blue-400 hover:text-blue-300">Refresh</button>
+      <div className="flex flex-col gap-3 mb-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-black text-white font-outfit">Audit Logs</h2>
+          <button onClick={() => fetchLogs(true)} className="text-xs font-bold text-blue-400 hover:text-blue-300">Refresh</button>
+        </div>
+        <input 
+          type="text" 
+          placeholder="Search logs (IP, Action, Username)..." 
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="input bg-[#0c0d14] text-xs py-2 px-3 border-white/[0.05] placeholder-gray-600 w-full"
+        />
       </div>
       <div className="space-y-3">
-        {logs.length === 0 ? (
+        {logs.length === 0 && !loadingLogs ? (
           <p className="text-xs text-gray-500">No logs found.</p>
         ) : (
-          logs.map(log => (
-            <div key={log.id} className="card p-3 bg-[#0c0d14]/70 border-white/[0.05]">
+          logs.map((log, idx) => (
+            <div key={`${log.id}-${idx}`} className="card p-3 bg-[#0c0d14]/70 border-white/[0.05]">
               <div className="flex items-center justify-between mb-2">
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${log.action.includes("FAIL") || log.action.includes("BLOCK") || log.action.includes("BANNED") ? "bg-rose-500/20 text-rose-400" : log.action.includes("RATE_LIMIT") ? "bg-orange-500/20 text-orange-400" : "bg-emerald-500/20 text-emerald-400"}`}>
                   {log.action}
@@ -111,6 +150,16 @@ export default function MobileSecurity() {
               </div>
             </div>
           ))
+        )}
+        
+        {loadingLogs && (
+          <p className="text-xs text-center text-gray-500 animate-pulse py-2">Loading logs...</p>
+        )}
+        
+        {hasMore && !loadingLogs && logs.length > 0 && (
+          <button onClick={() => fetchLogs(false)} className="w-full py-3 mt-4 text-xs font-bold text-gray-400 bg-white/[0.02] border border-white/[0.05] rounded-xl hover:bg-white/[0.05] hover:text-white transition-colors">
+            Load More Logs &darr;
+          </button>
         )}
       </div>
     </div>
