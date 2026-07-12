@@ -150,7 +150,6 @@ export default function MatchDetail({ matchId, onClose }: { matchId: number; onC
           </div>
         ) : null}
       </div>
-      </div>
 
       {viewingUser && (
         <StatsModal onClose={() => setViewingUser(null)} userName={viewingUser} />
