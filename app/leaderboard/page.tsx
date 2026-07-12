@@ -9,6 +9,7 @@ import StatsModal from "@/components/StatsModal";
 type LeaderboardEntry = {
   user_id: number;
   name: string;
+  username: string;
   pfp_path: string | null;
   points: number;
   correct_count: number;
@@ -49,7 +50,7 @@ export default function LeaderboardPage() {
 
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isStandalone, setIsStandalone] = useState(true); // default true to avoid layout flicker
-  const [showStatsModal, setShowStatsModal] = useState(false);
+  const [viewingUser, setViewingUser] = useState<string | null>(null);
   const [isIOS, setIsIOS] = useState(false);
 
   // Profile Edit modal states
@@ -435,7 +436,7 @@ export default function LeaderboardPage() {
         
         {/* Quick actions/Admin config */}
         <div className="flex gap-2">
-          <button onClick={() => setShowStatsModal(true)} className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:bg-emerald-500/10 hover:border-emerald-500/20 text-emerald-400 transition-all duration-300" title="My Stats">
+          <button onClick={() => setViewingUser(me?.username || null)} className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:bg-emerald-500/10 hover:border-emerald-500/20 text-emerald-400 transition-all duration-300" title="My Stats">
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
           </button>
           {me?.is_admin ? (
@@ -523,7 +524,10 @@ export default function LeaderboardPage() {
           <div className="flex justify-center items-end gap-1.5 xs:gap-3 md:gap-6 pt-10 pb-4">
             {/* 2nd Place */}
             {second ? (
-              <div className="flex flex-col items-center flex-1 max-w-[85px] xs:max-w-[120px]">
+              <div 
+                onClick={() => setViewingUser(second.username)}
+                className="flex flex-col items-center flex-1 max-w-[85px] xs:max-w-[120px] cursor-pointer hover:scale-105 transition-transform"
+              >
                 <div className="relative">
                   <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-slate-400 to-slate-200 blur-sm opacity-60" />
                   {second.pfp_path ? (
@@ -550,7 +554,10 @@ export default function LeaderboardPage() {
 
             {/* 1st Place */}
             {first ? (
-              <div className="flex flex-col items-center flex-1 max-w-[95px] xs:max-w-[130px] z-10 -translate-y-4">
+              <div 
+                onClick={() => setViewingUser(first.username)}
+                className="flex flex-col items-center flex-1 max-w-[95px] xs:max-w-[130px] z-10 -translate-y-4 cursor-pointer hover:scale-105 transition-transform"
+              >
                 <div className="relative">
                   {/* Glowing halo behind leader */}
                   <div className="absolute -inset-1.5 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-300 blur-md opacity-80 animate-pulse" />
@@ -579,7 +586,10 @@ export default function LeaderboardPage() {
 
             {/* 3rd Place */}
             {third ? (
-              <div className="flex flex-col items-center flex-1 max-w-[85px] xs:max-w-[120px]">
+              <div 
+                onClick={() => setViewingUser(third.username)}
+                className="flex flex-col items-center flex-1 max-w-[85px] xs:max-w-[120px] cursor-pointer hover:scale-105 transition-transform"
+              >
                 <div className="relative">
                   <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-orange-500 to-orange-300 blur-sm opacity-60" />
                   {third.pfp_path ? (
@@ -609,7 +619,11 @@ export default function LeaderboardPage() {
           {remainder.length > 0 ? (
             <div className="border-t border-white/[0.05] mt-4 pt-3 space-y-1">
               {remainder.map((entry) => (
-                <div key={entry.user_id} className="flex items-center gap-3 py-2 px-3 hover:bg-white/[0.02] rounded-xl transition-all duration-200">
+                <div 
+                  key={entry.user_id} 
+                  onClick={() => setViewingUser(entry.username)}
+                  className="flex items-center gap-3 py-2 px-3 hover:bg-white/[0.02] rounded-xl transition-all duration-200 cursor-pointer hover:bg-white/[0.05]"
+                >
                   <div className="w-6 text-center font-bold text-sm text-gray-500">
                     {entry.rank}
                   </div>
@@ -828,8 +842,8 @@ export default function LeaderboardPage() {
       )}
 
       {/* Stats Modal */}
-      {showStatsModal && me && (
-        <StatsModal onClose={() => setShowStatsModal(false)} userName={me.name} />
+      {viewingUser && (
+        <StatsModal onClose={() => setViewingUser(null)} userName={viewingUser} />
       )}
     </div>
   );
