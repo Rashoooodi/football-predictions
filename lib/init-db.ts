@@ -8,7 +8,12 @@ export function initDb() {
       username TEXT UNIQUE NOT NULL,
       pfp_path TEXT,
       is_admin INTEGER DEFAULT 0,
-      last_login_at TEXT
+      last_login_at TEXT,
+      is_hidden INTEGER DEFAULT 0,
+      pin TEXT DEFAULT NULL,
+      is_banned INTEGER DEFAULT 0,
+      failed_attempts INTEGER DEFAULT 0,
+      locked_until DATETIME
     );
 
     CREATE TABLE IF NOT EXISTS matches (
@@ -25,6 +30,8 @@ export function initDb() {
       with_reward INTEGER DEFAULT 1,
       is_frozen INTEGER DEFAULT 0,
       prediction_open_time TEXT,
+      api_id TEXT DEFAULT NULL,
+      is_hidden INTEGER DEFAULT 1,
       created_at TEXT DEFAULT (datetime('now'))
     );
 
@@ -55,6 +62,12 @@ export function initDb() {
       subscription_json TEXT NOT NULL,
       created_at TEXT DEFAULT (datetime('now')),
       FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS banned_ips (
+      ip TEXT PRIMARY KEY,
+      reason TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
 
