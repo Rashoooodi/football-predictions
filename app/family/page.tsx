@@ -49,7 +49,19 @@ export default function PredictorsPage() {
         {members.map((m) => {
           const ratio = m.total_predictions > 0 ? (m.correct / m.total_predictions) * 100 : 0;
           return (
-            <div key={m.id} onClick={() => setViewingUser(m.username)} className="card cursor-pointer hover:scale-[1.02] bg-[#0c0d14]/50 border-white/[0.06] hover:border-red-500/20 text-center flex flex-col items-center p-6 relative overflow-hidden group transition-transform duration-300">
+            <div 
+              key={m.id} 
+              onClick={() => setViewingUser(m.username)} 
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setViewingUser(m.username);
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              className="card cursor-pointer hover:scale-[1.02] bg-[#0c0d14]/50 border-white/[0.06] hover:border-red-500/20 text-center flex flex-col items-center p-6 relative overflow-hidden group transition-transform duration-300 focus:outline-none focus:ring-2 focus:ring-white/20"
+            >
               {/* Subtle background glow on hover */}
               <div className="absolute inset-0 bg-gradient-to-b from-red-500/0 to-red-500/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
               

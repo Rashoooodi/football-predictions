@@ -194,7 +194,19 @@ export default function ApiMatchManager({ onMatchAdded }: { onMatchAdded: () => 
             const db = getLocalTime(b.local_date);
             return (da ? da.getTime() : 0) - (db ? db.getTime() : 0);
           }).map((g: any) => (
-            <div key={g._id} className="card border-white/[0.04] p-3 flex items-center justify-between gap-4 hover:bg-white/[0.02] cursor-pointer transition-all" onClick={() => handleSelect(g)}>
+            <div 
+              key={g._id} 
+              className="card border-white/[0.04] p-3 flex items-center justify-between gap-4 hover:bg-white/[0.02] cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-white/20" 
+              onClick={() => handleSelect(g)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleSelect(g);
+                }
+              }}
+              role="button"
+              tabIndex={0}
+            >
               <div>
                 <div className="text-xs font-bold text-white mb-1 flex items-center gap-2">
                   <span className="text-sm">{matchCountryFlag(g.home_team_name_en)}</span> {g.home_team_name_en} 
