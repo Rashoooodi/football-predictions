@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import CountdownTimer from "@/components/CountdownTimer";
+import StatsModal from "@/components/StatsModal";
 
 function triggerHaptic(pattern: number | number[]) {
   if (typeof window !== "undefined" && window.navigator && window.navigator.vibrate) {
@@ -67,6 +68,7 @@ export default function PredictPage() {
   const [score2, setScore2] = useState("0");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [viewingUser, setViewingUser] = useState<string | null>(null);
   const [takenScores, setTakenScores] = useState<{ team1_score: number; team2_score: number }[]>([]);
   const [allPredictions, setAllPredictions] = useState<{
     id: number;
@@ -74,6 +76,7 @@ export default function PredictPage() {
     team1_score: number | null;
     team2_score: number | null;
     name: string;
+    username?: string;
     pfp_path: string | null;
     submitted_at: string;
   }[]>([]);
@@ -288,12 +291,13 @@ export default function PredictPage() {
                   return (
                     <div
                       key={p.id}
-                      className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 ${
+                      onClick={() => setViewingUser(p.username || "MISSING")}
+                      className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 cursor-pointer hover:scale-[1.02] ${
                         isCorrect
                           ? "bg-red-500/[0.04] border-red-500/20 shadow-[0_2px_10px_rgba(16,185,129,0.05)]"
                           : isLiveWinner
                           ? "bg-rose-500/[0.04] border-rose-500/20 shadow-[0_2px_10px_rgba(244,63,94,0.05)] animate-pulse"
-                          : "bg-white/[0.01] border-white/[0.04]"
+                          : "bg-white/[0.01] border-white/[0.04] hover:bg-white/[0.03]"
                       }`}
                     >
                       {p.pfp_path ? (
@@ -445,6 +449,10 @@ export default function PredictPage() {
             )}
           </button>
         </form>
+      )}
+
+      {viewingUser && (
+        <StatsModal onClose={() => setViewingUser(null)} userName={viewingUser} />
       )}
     </div>
   );
