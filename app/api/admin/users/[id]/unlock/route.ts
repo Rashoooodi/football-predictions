@@ -7,8 +7,14 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  let session;
   try {
-    const session = await requireAdmin();
+    session = await requireAdmin();
+  } catch {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
     
     db.prepare("UPDATE users SET failed_attempts = 0, locked_until = NULL WHERE id = ?").run(params.id);
     
