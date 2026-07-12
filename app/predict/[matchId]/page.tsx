@@ -292,7 +292,15 @@ export default function PredictPage() {
                     <div
                       key={p.id}
                       onClick={() => setViewingUser(p.username || "MISSING")}
-                      className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 cursor-pointer hover:scale-[1.02] ${
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setViewingUser(p.username || "MISSING");
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 cursor-pointer hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-white/20 ${
                         isCorrect
                           ? "bg-red-500/[0.04] border-red-500/20 shadow-[0_2px_10px_rgba(16,185,129,0.05)]"
                           : isLiveWinner

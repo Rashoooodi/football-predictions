@@ -535,7 +535,15 @@ export default function LeaderboardPage() {
             {second ? (
               <div 
                 onClick={() => setViewingUser(second.username)}
-                className="flex flex-col items-center flex-1 max-w-[85px] xs:max-w-[120px] cursor-pointer hover:scale-105 transition-transform"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setViewingUser(second.username);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                className="flex flex-col items-center flex-1 max-w-[85px] xs:max-w-[120px] cursor-pointer hover:scale-105 transition-transform focus:outline-none focus:ring-2 focus:ring-white/20 rounded-xl"
               >
                 <div className="relative">
                   <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-slate-400 to-slate-200 blur-sm opacity-60" />
@@ -565,7 +573,15 @@ export default function LeaderboardPage() {
             {first ? (
               <div 
                 onClick={() => setViewingUser(first.username)}
-                className="flex flex-col items-center flex-1 max-w-[95px] xs:max-w-[130px] z-10 -translate-y-4 cursor-pointer hover:scale-105 transition-transform"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setViewingUser(first.username);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                className="flex flex-col items-center flex-1 max-w-[95px] xs:max-w-[130px] z-10 -translate-y-4 cursor-pointer hover:scale-105 transition-transform focus:outline-none focus:ring-2 focus:ring-white/20 rounded-xl"
               >
                 <div className="relative">
                   {/* Glowing halo behind leader */}
@@ -597,7 +613,15 @@ export default function LeaderboardPage() {
             {third ? (
               <div 
                 onClick={() => setViewingUser(third.username)}
-                className="flex flex-col items-center flex-1 max-w-[85px] xs:max-w-[120px] cursor-pointer hover:scale-105 transition-transform"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setViewingUser(third.username);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                className="flex flex-col items-center flex-1 max-w-[85px] xs:max-w-[120px] cursor-pointer hover:scale-105 transition-transform focus:outline-none focus:ring-2 focus:ring-white/20 rounded-xl"
               >
                 <div className="relative">
                   <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-orange-500 to-orange-300 blur-sm opacity-60" />
@@ -631,7 +655,15 @@ export default function LeaderboardPage() {
                 <div 
                   key={entry.user_id} 
                   onClick={() => setViewingUser(entry.username)}
-                  className="flex items-center gap-3 py-2 px-3 hover:bg-white/[0.02] rounded-xl transition-all duration-200 cursor-pointer hover:bg-white/[0.05]"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setViewingUser(entry.username);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  className="flex items-center gap-3 py-2 px-3 hover:bg-white/[0.02] rounded-xl transition-all duration-200 cursor-pointer hover:bg-white/[0.05] focus:outline-none focus:ring-2 focus:ring-white/20"
                 >
                   <div className="w-6 text-center font-bold text-sm text-gray-500">
                     {entry.rank}
