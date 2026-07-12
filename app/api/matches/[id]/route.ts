@@ -47,8 +47,20 @@ export async function PUT(
   const isHidden = body.is_hidden !== undefined ? (body.is_hidden ? 1 : 0) : (match as any).is_hidden;
 
   // Manual Override Scores
-  const team1Score = body.team1_score !== undefined && body.team1_score !== "" ? parseInt(body.team1_score) : (match as any).team1_score;
-  const team2Score = body.team2_score !== undefined && body.team2_score !== "" ? parseInt(body.team2_score) : (match as any).team2_score;
+  let team1Score = (match as any).team1_score;
+  if (body.team1_score !== undefined && body.team1_score !== "") {
+    const p1 = parseInt(body.team1_score);
+    if (isNaN(p1) || p1 < 0) return NextResponse.json({ error: "Invalid team 1 score" }, { status: 400 });
+    team1Score = p1;
+  }
+  
+  let team2Score = (match as any).team2_score;
+  if (body.team2_score !== undefined && body.team2_score !== "") {
+    const p2 = parseInt(body.team2_score);
+    if (isNaN(p2) || p2 < 0) return NextResponse.json({ error: "Invalid team 2 score" }, { status: 400 });
+    team2Score = p2;
+  }
+  
   const isFinished = (team1Score !== null && team2Score !== null) ? 1 : (match as any).is_finished;
 
   if (!team1 || !team2 || !team1Flag || !team2Flag || !kickoffTime || !predictionDeadline) {
