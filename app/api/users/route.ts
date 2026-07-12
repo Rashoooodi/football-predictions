@@ -10,7 +10,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const users = db.prepare("SELECT * FROM users ORDER BY name").all();
+  const users = db.prepare("SELECT id, name, username, phone, pfp_path, is_admin, is_hidden, is_locked FROM users ORDER BY name").all();
   return NextResponse.json(users);
 }
 

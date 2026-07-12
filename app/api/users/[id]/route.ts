@@ -33,7 +33,7 @@ export async function POST(
     );
   }
 
-  const user = db.prepare("SELECT * FROM users WHERE id = ?").get(params.id) as any;
+  const user = db.prepare("SELECT id, name, username, phone, pfp_path, is_admin, is_hidden, is_locked FROM users WHERE id = ?").get(params.id) as any;
   if (!user) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }

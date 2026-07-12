@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
 
   await createSession(user.id);
 
-  const fullUser = db.prepare("SELECT * FROM users WHERE id = ?").get(user.id);
+  const fullUser = db.prepare("SELECT id, name, username, phone, pfp_path, is_admin, is_hidden, is_locked FROM users WHERE id = ?").get(user.id);
   return NextResponse.json(fullUser);
 }
 

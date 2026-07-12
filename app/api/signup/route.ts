@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     // Send Telegram Alert
     sendTelegramAlert(`🔔 <b>New Predictor Registered!</b>\nName: ${name}\nUsername: @${username}\nIP: ${ip}`, "signup");
 
-    const user = db.prepare("SELECT * FROM users WHERE id = ?").get(userId);
+    const user = db.prepare("SELECT id, name, username, phone, pfp_path, is_admin, is_hidden, is_locked FROM users WHERE id = ?").get(userId);
     return NextResponse.json(user);
   } catch (err: any) {
     return NextResponse.json({ error: "Username already taken. Try another one." }, { status: 409 });
