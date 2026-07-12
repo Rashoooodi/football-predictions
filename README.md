@@ -14,9 +14,23 @@ World Cup prediction tracker for the family. Phone-number login, dark mode UI, a
    npm run init-db
    ```
 
-3. Set your JWT secret in `.env.local`:
+3. Create a `.env.local` file and add the required environment variables:
    ```
+   # 1. JWT_SECRET: Generates secure session cookies.
+   # How to get: Make up a random 32+ character string or use `openssl rand -base64 32`.
    JWT_SECRET=your-random-secret-here
+
+   # 2. VAPID Keys: Required for sending Native Web Push Notifications to iOS/Android.
+   # How to get: Run `npx web-push generate-vapid-keys` in your terminal.
+   NEXT_PUBLIC_VAPID_PUBLIC_KEY=your-public-key
+   VAPID_PRIVATE_KEY=your-private-key
+
+   # 3. FIFA_API_TOKEN: Used to fetch live match scores automatically.
+   # How to get: Request an access token from your live sports data provider API.
+   FIFA_API_TOKEN=your-api-token
+
+   # 4. MAINTENANCE_MODE: Toggle the entire site offline
+   MAINTENANCE_MODE="false"
    ```
 
 4. Run the dev server:
@@ -66,32 +80,23 @@ If you have predictions from WhatsApp before using this app:
 5. Check "Match is finished" and enter the result if applicable
 6. Click Import
 
-## Hosting via Tailscale Funnel
+## Deploying to Production
 
-To share the app with your family over the internet:
+To securely deploy the latest code to the live production server (DigitalOcean), we use an automated script that pulls backups and syncs files securely without overwriting the production database.
 
-1. Install Tailscale:
-   ```
-   brew install tailscale
-   ```
-
-2. Login to Tailscale:
-   ```
-   tailscale up
+1. Ensure your `.env.local` and `.gitignore` are configured properly.
+2. Run the deployment script:
+   ```bash
+   bash scripts/push-to-prod.sh
    ```
 
-3. Build and start the production server:
-   ```
-   npm run build
-   npm start
-   ```
+## Deploying to Staging (Test Server)
 
-4. In another terminal, expose port 3000 via funnel:
-   ```
-   tailscale funnel 3000
-   ```
+If you want to sync your code **AND** your local testing database (`football.db`) to the Staging VPS (Tencent) for review:
 
-5. Tailscale will give you a public URL like `https://your-machine.tailnet.ts.net` - share this with your family.
+```bash
+sshpass -p 'REDACTED_PASSWORD' rsync -avz -e "ssh -o StrictHostKeyChecking=no" --exclude '.next' --exclude 'node_modules' --exclude 'public/uploads' --exclude 'football.db' --exclude 'football.db-*' --exclude '.git' ./ ubuntu@staging.example.com:~/nbr-predictions/ && sshpass -p 'REDACTED_PASSWORD' scp -o StrictHostKeyChecking=no football.db ubuntu@staging.example.com:~/nbr-predictions/football.db && sshpass -p 'REDACTED_PASSWORD' ssh -o StrictHostKeyChecking=no ubuntu@staging.example.com 'cd nbr-predictions && npm install && npm run build && pm2 restart nbr-predictions'
+```
 
 ## How Scoring Works
 
