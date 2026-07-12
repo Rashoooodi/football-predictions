@@ -154,8 +154,17 @@ export default function LeaderboardPage() {
       }
     }
 
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsProfileModalOpen(false);
+        setCropperSrc(null);
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+
     return () => {
       (window as any).onBeforeInstallPromptReady = null;
+      window.removeEventListener('keydown', handleEsc);
     };
   }, []);
 
@@ -675,7 +684,12 @@ export default function LeaderboardPage() {
 
       {/* 👤 PROFILE EDIT OVERLAY MODAL */}
       {isProfileModalOpen && me && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+        <div 
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="profile-modal-title"
+        >
           <div className="bg-[#0c0d14]/90 backdrop-blur-xl border border-white/[0.08] max-w-sm w-full p-6 rounded-3xl shadow-2xl relative">
             {/* Close Button */}
             <button
@@ -686,7 +700,7 @@ export default function LeaderboardPage() {
             </button>
 
             <div className="text-center mb-6">
-              <h2 className="text-xl font-extrabold tracking-tight text-white font-outfit">Edit Profile</h2>
+              <h2 id="profile-modal-title" className="text-xl font-extrabold tracking-tight text-white font-outfit">Edit Profile</h2>
               <p className="text-[10px] uppercase font-bold tracking-widest text-gray-500 mt-1">Update your name or photo</p>
             </div>
 
@@ -771,10 +785,15 @@ export default function LeaderboardPage() {
 
       {/* ✂️ CROPPER OVERLAY MODAL */}
       {cropperSrc && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div 
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cropper-modal-title"
+        >
           <div className="card max-w-sm w-full bg-[#0c0d14]/95 border-white/[0.08] shadow-2xl p-6 flex flex-col items-center gap-5">
             <div className="text-center w-full">
-              <h3 className="font-extrabold text-lg text-white font-outfit">Crop Photo</h3>
+              <h3 id="cropper-modal-title" className="font-extrabold text-lg text-white font-outfit">Crop Photo</h3>
               <p className="text-xs text-gray-400 mt-1">Drag to position, use slider to zoom</p>
             </div>
 

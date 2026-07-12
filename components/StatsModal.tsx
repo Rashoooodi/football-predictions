@@ -32,14 +32,27 @@ export default function StatsModal({ onClose, userName }: { onClose: () => void,
       });
   }, []);
 
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in">
+    <div 
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="stats-modal-title"
+    >
       <div className="bg-[#0b0c13]/95 border border-white/[0.08] w-full max-w-lg rounded-3xl shadow-2xl relative flex flex-col max-h-[85vh] overflow-hidden">
         {/* Header */}
         <div className="p-5 border-b border-white/[0.05] flex items-center justify-between shrink-0">
           <div>
             <div className="flex items-center gap-3">
-              <h2 className="text-lg font-black text-white font-outfit">{data?.displayName || userName}'s Stats</h2>
+              <h2 id="stats-modal-title" className="text-lg font-black text-white font-outfit">{data?.displayName || userName}'s Stats</h2>
               {data && (
                 <span className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[10px] font-black px-2 py-0.5 rounded-md">
                   {data.totalPoints} PTS

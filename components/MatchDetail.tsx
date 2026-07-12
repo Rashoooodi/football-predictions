@@ -39,12 +39,26 @@ export default function MatchDetail({ matchId, onClose }: { matchId: number; onC
       .then(setData);
   }, [matchId]);
 
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
   if (!data) return <div className="p-4">Loading...</div>;
 
   const { match, predictions, correct } = data;
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-opacity duration-300 animate-fade-in" onClick={onClose}>
+    <div 
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-opacity duration-300 animate-fade-in" 
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="match-detail-title"
+    >
       <div
         className="bg-[#0c0d14]/90 backdrop-blur-xl rounded-3xl border border-white/[0.08] max-w-md w-full p-6 max-h-[85vh] overflow-y-auto shadow-2xl relative"
         onClick={(e) => e.stopPropagation()}
@@ -58,7 +72,7 @@ export default function MatchDetail({ matchId, onClose }: { matchId: number; onC
         </button>
 
         <div className="text-center mb-6">
-          <h2 className="text-xl font-extrabold tracking-tight text-white font-outfit">Match predictions</h2>
+          <h2 id="match-detail-title" className="text-xl font-extrabold tracking-tight text-white font-outfit">Match predictions</h2>
           <p className="text-[10px] uppercase font-bold tracking-widest text-gray-500 mt-1">Family board</p>
         </div>
 
