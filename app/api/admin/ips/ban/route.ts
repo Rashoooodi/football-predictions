@@ -14,8 +14,14 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  let session;
   try {
-    const session = await requireAdmin();
+    session = await requireAdmin();
+  } catch {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
     const { ip, reason } = await request.json();
     
     if (!ip) return NextResponse.json({ error: "IP required" }, { status: 400 });
@@ -34,8 +40,14 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  let session;
   try {
-    const session = await requireAdmin();
+    session = await requireAdmin();
+  } catch {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
     const { ip } = await request.json();
     
     if (!ip) return NextResponse.json({ error: "IP required" }, { status: 400 });
