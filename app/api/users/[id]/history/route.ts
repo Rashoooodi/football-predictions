@@ -12,6 +12,10 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  if (session.userId !== parseInt(params.id) && !session.isAdmin) {
+    return NextResponse.json({ error: "Forbidden: Cannot access other users' history" }, { status: 403 });
+  }
+
   try {
     const rows = db
       .prepare(
