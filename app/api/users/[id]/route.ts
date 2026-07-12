@@ -90,9 +90,12 @@ export async function DELETE(
   }
 
   try {
-    db.prepare("DELETE FROM push_subscriptions WHERE user_id = ?").run(params.id);
-    db.prepare("DELETE FROM predictions WHERE user_id = ?").run(params.id);
-    db.prepare("DELETE FROM users WHERE id = ?").run(params.id);
+    const deleteUser = db.transaction((userId: string) => {
+      db.prepare("DELETE FROM push_subscriptions WHERE user_id = ?").run(userId);
+      db.prepare("DELETE FROM predictions WHERE user_id = ?").run(userId);
+      db.prepare("DELETE FROM users WHERE id = ?").run(userId);
+    });
+    deleteUser(params.id);
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: "Database error: " + error.message }, { status: 500 });

@@ -116,9 +116,12 @@ export async function DELETE(
   }
 
   try {
-    // Delete predictions first (foreign key constraints)
-    db.prepare("DELETE FROM predictions WHERE match_id = ?").run(params.id);
-    db.prepare("DELETE FROM matches WHERE id = ?").run(params.id);
+    const deleteMatch = db.transaction((matchId: string) => {
+      // Delete predictions first (foreign key constraints)
+      db.prepare("DELETE FROM predictions WHERE match_id = ?").run(matchId);
+      db.prepare("DELETE FROM matches WHERE id = ?").run(matchId);
+    });
+    deleteMatch(params.id);
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: "Database error: " + error.message }, { status: 500 });
