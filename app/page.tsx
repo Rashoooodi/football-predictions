@@ -295,7 +295,7 @@ export default function LoginPage() {
             {mode === "login" && (
               <form onSubmit={handleLogin} className="space-y-5">
                 <div className="space-y-1">
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1 ml-1">
+                  <label htmlFor="login-username" className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1 ml-1">
                     Username
                   </label>
                   <div className="relative">
@@ -305,6 +305,7 @@ export default function LoginPage() {
                       </svg>
                     </span>
                     <input
+                      id="login-username"
                       type="text"
                       placeholder="e.g. khalid.hassan"
                       value={username}
@@ -319,7 +320,7 @@ export default function LoginPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1 ml-1">
+                  <label htmlFor="login-pin" className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1 ml-1">
                     PIN Code
                   </label>
                   <div className="relative">
@@ -329,6 +330,7 @@ export default function LoginPage() {
                       </svg>
                     </span>
                     <input
+                      id="login-pin"
                       type="password"
                       inputMode="numeric"
                       pattern="[0-9]*"
@@ -390,10 +392,11 @@ export default function LoginPage() {
 
                 {/* Name */}
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1 ml-1">
+                  <label htmlFor="signup-name" className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1 ml-1">
                     Display Name <span className="text-rose-400">*</span>
                   </label>
                   <input
+                    id="signup-name"
                     type="text"
                     placeholder="e.g. Khalid Hassan"
                     value={signupName}
@@ -406,12 +409,13 @@ export default function LoginPage() {
 
                 {/* Username */}
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1 ml-1">
+                  <label htmlFor="signup-username" className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1 ml-1">
                     Username <span className="text-rose-400">*</span>
                   </label>
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 pointer-events-none text-sm font-bold">@</span>
                     <input
+                      id="signup-username"
                       type="text"
                       placeholder="e.g. khalid.hassan"
                       value={signupUsername}
@@ -429,7 +433,7 @@ export default function LoginPage() {
 
                 {/* PIN */}
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1 ml-1">
+                  <label htmlFor="signup-pin" className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1 ml-1">
                     PIN Code <span className="text-rose-400">*</span>
                   </label>
                   <div className="relative">
@@ -439,6 +443,7 @@ export default function LoginPage() {
                       </svg>
                     </span>
                     <input
+                      id="signup-pin"
                       type="password"
                       inputMode="numeric"
                       pattern="[0-9]*"
