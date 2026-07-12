@@ -25,10 +25,13 @@ export async function GET(
     )
     .all(params.id);
 
+  // Ensure we have the full leaderboard for ranking
+  const fullLeaderboard = calculateLeaderboard(false);
+  const userRankMap = new Map(fullLeaderboard.map(u => [u.user_id, u.rank]));
+
   let filteredPredictions = predictions;
   if (!isAdmin) {
-    const leaderboard = calculateLeaderboard(false);
-    const top5Ids = new Set(leaderboard.slice(0, 5).map(u => u.user_id));
+    const top5Ids = new Set(fullLeaderboard.slice(0, 5).map(u => u.user_id));
     filteredPredictions = predictions.filter((p: any) => top5Ids.has(p.user_id) || p.user_id === userId);
   }
 
@@ -58,9 +61,7 @@ export async function GET(
       team2_score: p.team2_score,
     }));
 
-  // Ensure we have the full leaderboard for ranking
-  const fullLeaderboard = calculateLeaderboard(false);
-  const userRankMap = new Map(fullLeaderboard.map(u => [u.user_id, u.rank]));
+
 
   maskedPredictions.sort((a: any, b: any) => {
     const rankA = userRankMap.get(a.user_id) ?? 999;

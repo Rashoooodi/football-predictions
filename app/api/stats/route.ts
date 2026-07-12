@@ -2,7 +2,14 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
 
+let cachedStatsRes: any = null;
+let lastStatsTime = 0;
+
 export async function GET() {
+  if (cachedStatsRes && Date.now() - lastStatsTime < 30000) {
+    return NextResponse.json(cachedStatsRes);
+  }
+
   const users = db.prepare("SELECT id, name, username, pfp_path FROM users").all() as any[];
 
   // 1. Fetch all finished matches in chronological order
@@ -75,11 +82,16 @@ export async function GET() {
   const sortedByCorrect = [...stats].sort((a, b) => b.total_correct - a.total_correct);
   const topUser = sortedByCorrect[0];
 
-  return NextResponse.json({
+  const resData = {
     stats,
     scoreProphet:
       topUser && topUser.total_correct > 0
         ? { name: topUser.name, count: topUser.total_correct }
         : null,
-  });
+  };
+
+  cachedStatsRes = resData;
+  lastStatsTime = Date.now();
+
+  return NextResponse.json(resData);
 }

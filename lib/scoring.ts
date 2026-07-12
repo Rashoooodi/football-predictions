@@ -10,7 +10,14 @@ export type LeaderboardEntry = {
   rank: number;
 };
 
+let cachedLeaderboard: LeaderboardEntry[] | null = null;
+let lastCacheTime = 0;
+
 export function calculateLeaderboard(includeHidden = false): LeaderboardEntry[] {
+  if (!includeHidden && cachedLeaderboard && Date.now() - lastCacheTime < 30000) {
+    return cachedLeaderboard;
+  }
+
   const firstPtsSetting = db.prepare("SELECT value FROM settings WHERE key = 'first_correct_points'").get() as any;
   const otherPtsSetting = db.prepare("SELECT value FROM settings WHERE key = 'other_correct_points'").get() as any;
   const firstPts = firstPtsSetting ? parseInt(firstPtsSetting.value) : 2;
@@ -102,7 +109,7 @@ export function calculateLeaderboard(includeHidden = false): LeaderboardEntry[] 
 
   const finalFiltered = completeList.filter(u => includeHidden ? true : !u.is_hidden);
 
-  return finalFiltered.map((u, i) => ({
+  const result = finalFiltered.map((u, i) => ({
     user_id: u.user_id,
     name: u.name,
     username: u.username,
@@ -111,6 +118,13 @@ export function calculateLeaderboard(includeHidden = false): LeaderboardEntry[] 
     correct_count: u.correct_count,
     rank: i + 1,
   }));
+
+  if (!includeHidden) {
+    cachedLeaderboard = result;
+    lastCacheTime = Date.now();
+  }
+
+  return result;
 }
 
 export function getMatchResults(matchId: number) {
