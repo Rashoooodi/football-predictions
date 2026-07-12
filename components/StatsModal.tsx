@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 type StatsResponse = {
+  displayName: string;
+  username: string;
+  totalPoints: number;
   progression: { date: string; points: number }[];
   accuracy: { team: string; correct: number; total: number; rate: number }[];
   recentForm: boolean[];
@@ -16,7 +19,7 @@ export default function StatsModal({ onClose, userName }: { onClose: () => void,
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("/api/me/stats")
+    fetch(`/api/user-stats/${encodeURIComponent(userName)}`)
       .then((r) => r.json())
       .then((d) => {
         if (d.error) setError(d.error);
@@ -35,8 +38,15 @@ export default function StatsModal({ onClose, userName }: { onClose: () => void,
         {/* Header */}
         <div className="p-5 border-b border-white/[0.05] flex items-center justify-between shrink-0">
           <div>
-            <h2 className="text-lg font-black text-white font-outfit">My Stats</h2>
-            <p className="text-[10px] uppercase font-bold tracking-widest text-gray-500 mt-0.5">{userName}</p>
+            <div className="flex items-center gap-3">
+              <h2 className="text-lg font-black text-white font-outfit">{data?.displayName || userName}'s Stats</h2>
+              {data && (
+                <span className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[10px] font-black px-2 py-0.5 rounded-md">
+                  {data.totalPoints} PTS
+                </span>
+              )}
+            </div>
+
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/[0.03] hover:bg-white/[0.08] text-gray-400 hover:text-white flex items-center justify-center transition-colors">✕</button>
         </div>
