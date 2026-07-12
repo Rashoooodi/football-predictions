@@ -19,7 +19,7 @@ type User = {
   is_admin: number; is_hidden: number; is_banned?: number; locked_until?: string | null; failed_attempts?: number; points?: number; correct_count?: number; current_streak?: number;
 };
 type Prediction = {
-  id: number; user_id: number; name: string; pfp_path: string | null;
+  id: number; user_id: number; name: string; username?: string; pfp_path: string | null;
   team1_score: number; team2_score: number; submitted_at: string;
 };
 type LedgerItem = {
@@ -108,7 +108,7 @@ export default function DesktopDashboard() {
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
   const [checking, setChecking] = useState(true);
-  const [showStatsModal, setShowStatsModal] = useState(false);
+  const [viewingUser, setViewingUser] = useState<string | null>(null);
 
   /* Data */
   const [leaderboard, setLeaderboard] = useState<User[]>([]);
@@ -754,7 +754,7 @@ export default function DesktopDashboard() {
             <div className="w-4 h-4">{notifPerm === "denied" ? <I.BellOff /> : <I.Bell />}</div>
           </button>
           {/* My Stats */}
-          <button onClick={() => setShowStatsModal(true)} title="My Stats" className="flex items-center gap-1.5 bg-white/[0.02] border border-white/[0.06] hover:border-emerald-500/20 hover:bg-emerald-500/10 py-1.5 px-3 rounded-xl transition-all duration-200 active:scale-95 text-emerald-400 font-bold text-[11px]"><svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg> <span>My Stats</span></button>
+          <button onClick={() => setViewingUser(currentUser.username)} title="My Stats" className="flex items-center gap-1.5 bg-white/[0.02] border border-white/[0.06] hover:border-emerald-500/20 hover:bg-emerald-500/10 py-1.5 px-3 rounded-xl transition-all duration-200 active:scale-95 text-emerald-400 font-bold text-[11px]"><svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg> <span>My Stats</span></button>
           {/* Profile */}
           <button onClick={() => { setProfName(currentUser.name); setProfFile(null); setProfError(""); setShowProfile(true); }} className="flex items-center gap-2.5 bg-white/[0.02] border border-white/[0.06] hover:border-red-500/20 hover:bg-white/[0.04] py-2 pl-2.5 pr-3.5 rounded-xl transition-all duration-200 active:scale-95">
             <Avatar src={currentUser.pfp_path} name={currentUser.name} size="sm" />
@@ -1540,7 +1540,7 @@ export default function DesktopDashboard() {
                         : "bg-white/[0.01] border-white/[0.03]";
 
                     return (
-                      <div key={p.id} className={`flex items-center justify-between p-2.5 rounded-2xl border transition-all duration-200 ${rowBorder}`}>
+                      <div key={p.id} onClick={() => setViewingUser(p.username || "MISSING")} className={`cursor-pointer hover:bg-white/[0.04] flex items-center justify-between p-2.5 rounded-2xl border transition-all duration-200 ${rowBorder}`}>
                         <div className="flex items-center gap-2.5 min-w-0">
                           <Avatar src={p.pfp_path} name={p.name} size="xs" />
                           <span className="text-xs font-bold text-gray-300 truncate">{p.name}</span>
@@ -1724,8 +1724,8 @@ export default function DesktopDashboard() {
       )}
 
       {/* Stats Modal */}
-      {showStatsModal && currentUser && (
-        <StatsModal onClose={() => setShowStatsModal(false)} userName={currentUser.name} />
+      {viewingUser && (
+        <StatsModal onClose={() => setViewingUser(null)} userName={viewingUser} />
       )}
     </div>
   );
