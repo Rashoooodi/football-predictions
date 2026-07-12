@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import ShareButton from "./ShareButton";
+import StatsModal from "./StatsModal";
 
 type Detail = {
   match: {
@@ -22,6 +23,7 @@ type Detail = {
     team2_score: number;
     submitted_at: string;
     name: string;
+    username?: string;
     pfp_path: string | null;
   }[];
   correct: any[];
@@ -29,6 +31,7 @@ type Detail = {
 
 export default function MatchDetail({ matchId, onClose }: { matchId: number; onClose: () => void }) {
   const [data, setData] = useState<Detail | null>(null);
+  const [viewingUser, setViewingUser] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/matches/" + matchId + "/predictions")
@@ -100,10 +103,11 @@ export default function MatchDetail({ matchId, onClose }: { matchId: number; onC
               return (
                 <div
                   key={p.id}
-                  className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 ${
+                  onClick={() => setViewingUser(p.username || "MISSING")}
+                  className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 cursor-pointer hover:scale-[1.02] ${
                     isCorrect
                       ? "bg-red-500/[0.04] border-red-500/20 shadow-[0_2px_10px_rgba(16,185,129,0.05)]"
-                      : "bg-white/[0.01] border-white/[0.04]"
+                      : "bg-white/[0.01] border-white/[0.04] hover:bg-white/[0.03]"
                   }`}
                 >
                   <span className="text-[11px] font-bold text-gray-500 w-5 shrink-0">{i + 1}.</span>
@@ -146,6 +150,11 @@ export default function MatchDetail({ matchId, onClose }: { matchId: number; onC
           </div>
         ) : null}
       </div>
+      </div>
+
+      {viewingUser && (
+        <StatsModal onClose={() => setViewingUser(null)} userName={viewingUser} />
+      )}
     </div>
   );
 }

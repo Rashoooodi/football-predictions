@@ -7,9 +7,9 @@ export async function GET(
   { params }: { params: { username: string } }
 ) {
   try {
-    const targetUser = db.prepare("SELECT id, name, username FROM users WHERE username = ?").get(decodeURIComponent(params.username).toLowerCase()) as any;
+    const targetUser = db.prepare("SELECT id, name, username, is_hidden FROM users WHERE username = ?").get(decodeURIComponent(params.username).toLowerCase()) as any;
 
-    if (!targetUser) {
+    if (!targetUser || targetUser.is_hidden) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
