@@ -2,9 +2,10 @@ import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import db from "./db";
 
-const SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "dev-secret-change-in-production"
-);
+if (!process.env.JWT_SECRET) {
+  throw new Error("FATAL: JWT_SECRET environment variable is missing.");
+}
+const SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 
 export type Session = {
   userId: number;
