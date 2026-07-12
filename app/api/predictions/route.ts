@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import db from "@/lib/db";
+import { getClientIp } from "@/lib/utils";
 
 export async function POST(request: NextRequest) {
   const session = await getSession();
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Scores must be valid non-negative integers" }, { status: 400 });
   }
 
-  const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
+  const ip = getClientIp(request);
   const existing = db.prepare("SELECT * FROM predictions WHERE user_id = ? AND match_id = ?").get(session.userId, matchId) as any;
 
   if (existing) {

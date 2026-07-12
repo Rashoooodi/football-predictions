@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import db from "@/lib/db";
+import { getClientIp } from "@/lib/utils";
 
 export async function GET() {
   try {
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
 
     db.prepare("INSERT OR REPLACE INTO banned_ips (ip, reason) VALUES (?, ?)").run(ip, reason || "Banned by Admin");
     
-    const adminIp = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
+    const adminIp = getClientIp(request);
     db.prepare("INSERT INTO audit_logs (user_id, action, ip_address, details) VALUES (?, 'IP_BANNED', ?, ?)").run(
       session.userId, adminIp, `Admin banned IP: ${ip}`
     );
@@ -54,7 +55,7 @@ export async function DELETE(request: NextRequest) {
 
     db.prepare("DELETE FROM banned_ips WHERE ip = ?").run(ip);
     
-    const adminIp = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
+    const adminIp = getClientIp(request);
     db.prepare("INSERT INTO audit_logs (user_id, action, ip_address, details) VALUES (?, 'IP_UNBANNED', ?, ?)").run(
       session.userId, adminIp, `Admin unbanned IP: ${ip}`
     );

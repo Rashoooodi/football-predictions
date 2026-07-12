@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import db from "@/lib/db";
+import { getClientIp } from "@/lib/utils";
 
 export async function PUT(
   request: NextRequest,
@@ -21,7 +22,7 @@ export async function PUT(
     db.prepare("UPDATE users SET is_banned = ? WHERE id = ?").run(isBanned, params.id);
     
     // Log the ban action
-    const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
+    const ip = getClientIp(request);
     db.prepare("INSERT INTO audit_logs (user_id, action, ip_address, details) VALUES (?, ?, ?, ?)").run(
       params.id, 
       isBanned ? "USER_BANNED" : "USER_UNBANNED", 

@@ -1,9 +1,10 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
+import { getClientIp } from "@/lib/utils";
 
 export async function POST(request: NextRequest) {
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0] || request.headers.get("x-real-ip") || "Unknown IP";
+  const ip = getClientIp(request);
   
   try {
     db.prepare(`

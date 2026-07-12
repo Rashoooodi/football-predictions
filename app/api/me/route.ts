@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import db from "@/lib/db";
+import { getClientIp } from "@/lib/utils";
 import path from "path";
 
 export async function GET(request: NextRequest) {
@@ -10,7 +11,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Not logged in" }, { status: 401 });
   }
   try {
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0] || request.headers.get("x-real-ip") || "Unknown IP";
+    const ip = getClientIp(request);
     
     const user = db
       .prepare("SELECT id, name, username, pfp_path, is_admin FROM users WHERE id = ?")

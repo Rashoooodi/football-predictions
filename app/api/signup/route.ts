@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSession } from "@/lib/auth";
 import { sendTelegramAlert } from "@/lib/telegram";
 import db from "@/lib/db";
+import { getClientIp } from "@/lib/utils";
 import crypto from "crypto";
 
 function hashPin(pin: string) {
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest) {
     // Auto login — create session immediately
     await createSession(userId);
 
-    const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
+    const ip = getClientIp(request);
     db.prepare("INSERT INTO audit_logs (user_id, action, ip_address, details) VALUES (?, 'SIGNUP_SUCCESS', ?, 'User created a new account')").run(userId, ip);
 
     // Send Telegram Alert

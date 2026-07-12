@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import db from "@/lib/db";
+import { getClientIp } from "@/lib/utils";
 
 export async function POST(
   request: NextRequest,
@@ -35,7 +36,7 @@ export async function POST(
       "UPDATE matches SET team1_score = ?, team2_score = ?, is_finished = ? WHERE id = ?"
     ).run(team1Score, team2Score, isLive ? 0 : 1, params.id);
 
-    const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
+    const ip = getClientIp(request);
     db.prepare("INSERT INTO audit_logs (user_id, action, ip_address, details) VALUES (?, ?, ?, ?)").run(
       session.userId, 
       isLive ? 'MATCH_SCORE_UPDATE_LIVE' : 'MATCH_SCORE_FINALIZED',
