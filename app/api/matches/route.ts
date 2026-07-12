@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin, getSession } from "@/lib/auth";
 import db from "@/lib/db";
+import { ensureTimezone, getClientIp } from "@/lib/utils";
 
 export async function GET() {
   const session = await getSession();
@@ -28,12 +29,6 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const team1 = body.team1;
   const team2 = body.team2;
-  const ensureTimezone = (ts: string | null) => {
-    if (!ts) return ts;
-    if (ts.includes("+") || ts.includes("Z")) return ts;
-    return `${ts}+03:00`;
-  };
-
   const kickoffTime = ensureTimezone(body.kickoffTime);
   const predictionDeadline = ensureTimezone(body.predictionDeadline);
   const predictionOpenTime = ensureTimezone(body.predictionOpenTime || null);
@@ -70,7 +65,7 @@ export async function POST(request: NextRequest) {
       is_finished
     );
 
-  const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
+  const ip = getClientIp(request);
   db.prepare("INSERT INTO audit_logs (user_id, action, ip_address, details) VALUES (?, 'MATCH_CREATED', ?, ?)").run(
     session.userId, ip, `Admin scheduled match ${team1.name} vs ${team2.name}`
   );

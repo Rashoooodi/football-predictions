@@ -3,47 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateUsername, createSession, logout } from "@/lib/auth";
 import { sendTelegramAlert } from "@/lib/telegram";
 import db from "@/lib/db";
-import crypto from "crypto";
-
-function hashPin(pin: string) {
-  const pepper = process.env.JWT_SECRET || "nbr-secure-pepper";
-  return crypto.createHash("sha256").update(pin + pepper).digest("hex");
-}
-
-// In-memory rate limiter to prevent PIN brute-forcing
-const rateLimitMap = new Map<string, { count: number; lastReset: number }>();
-
-function isRateLimited(ip: string) {
-  const now = Date.now();
-  const windowMs = 15 * 60 * 1000; // 15 minutes
-  const maxRequests = 15; // 15 attempts per 15 minutes
-
-  const record = rateLimitMap.get(ip) || { count: 0, lastReset: now };
-
-  if (now - record.lastReset > windowMs) {
-    record.count = 0;
-    record.lastReset = now;
-  }
-
-  record.count += 1;
-  rateLimitMap.set(ip, record);
-
-  return record.count > maxRequests;
-}
+import { getClientIp } from "@/lib/utils";
+import { hashPin, isRateLimited } from "@/lib/auth-utils";
 
 export async function POST(request: NextRequest) {
-  // Rate limiting check & Strict IP Parsing
-  let ip = "unknown";
-  const forwardedFor = request.headers.get("x-forwarded-for");
-  
-  if (forwardedFor) {
-    // Attackers can send fake IPs in this header. Caddy (our trusted proxy) will always 
-    // APPEND the true connection IP to the very end of the list. We must take the last one.
-    const ips = forwardedFor.split(',').map(s => s.trim());
-    ip = ips[ips.length - 1]; 
-  } else {
-    ip = request.headers.get("x-real-ip") || "unknown";
-  }
+  const ip = getClientIp(request);
 
   const isIpBanned = db.prepare("SELECT 1 FROM banned_ips WHERE ip = ?").get(ip);
   if (isIpBanned) {
