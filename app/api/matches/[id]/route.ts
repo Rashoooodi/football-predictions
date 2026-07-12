@@ -7,8 +7,17 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const match = db.prepare("SELECT * FROM matches WHERE id = ?").get(params.id);
+  const match = db.prepare("SELECT * FROM matches WHERE id = ?").get(params.id) as any;
   if (!match) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  if (match.is_hidden === 1) {
+    try {
+      await requireAdmin();
+    } catch {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+  }
+
   return NextResponse.json(match);
 }
 
