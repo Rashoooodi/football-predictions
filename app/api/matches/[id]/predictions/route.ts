@@ -17,7 +17,7 @@ export async function GET(
 
   const predictions = db
     .prepare(
-      "SELECT p.*, u.name, u.pfp_path, u.is_hidden " +
+      "SELECT p.*, u.name, u.username, u.pfp_path, u.is_hidden " +
         "FROM predictions p " +
         "JOIN users u ON p.user_id = u.id " +
         "WHERE p.match_id = ? AND u.is_hidden = 0 " +
@@ -40,6 +40,7 @@ export async function GET(
         id: p.id,
         user_id: p.user_id,
         name: p.name,
+        username: p.username,
         pfp_path: p.pfp_path,
         submitted_at: p.submitted_at,
         team1_score: null,
