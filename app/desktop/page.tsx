@@ -357,7 +357,7 @@ export default function DesktopDashboard() {
           setUpcomingMatches(updated);
         }
       }
-    }, 3000);
+    }, 30000);
     
     return () => clearInterval(interval);
   }, [activeTab, adminTab]);
