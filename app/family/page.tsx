@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import StatsModal from "@/components/StatsModal";
 
 type Member = {
   id: number;
   name: string;
+  username: string;
   pfp_path: string | null;
   is_admin: number;
   total_predictions: number;
@@ -14,6 +16,7 @@ type Member = {
 
 export default function PredictorsPage() {
   const [members, setMembers] = useState<Member[]>([]);
+  const [viewingUser, setViewingUser] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/family")
@@ -46,7 +49,7 @@ export default function PredictorsPage() {
         {members.map((m) => {
           const ratio = m.total_predictions > 0 ? (m.correct / m.total_predictions) * 100 : 0;
           return (
-            <div key={m.id} className="card bg-[#0c0d14]/50 border-white/[0.06] hover:border-red-500/20 text-center flex flex-col items-center p-6 relative overflow-hidden group">
+            <div key={m.id} onClick={() => setViewingUser(m.username)} className="card cursor-pointer hover:scale-[1.02] bg-[#0c0d14]/50 border-white/[0.06] hover:border-red-500/20 text-center flex flex-col items-center p-6 relative overflow-hidden group transition-transform duration-300">
               {/* Subtle background glow on hover */}
               <div className="absolute inset-0 bg-gradient-to-b from-red-500/0 to-red-500/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
               
@@ -108,6 +111,10 @@ export default function PredictorsPage() {
           );
         })}
       </div>
+
+      {viewingUser && (
+        <StatsModal onClose={() => setViewingUser(null)} userName={viewingUser} />
+      )}
     </div>
   );
 }
