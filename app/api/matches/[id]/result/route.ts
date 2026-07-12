@@ -19,8 +19,15 @@ export async function POST(
   const team2Score = body.team2Score;
   const isLive = body.isLive === true;
 
-  if (team1Score < 0 || team2Score < 0) {
-    return NextResponse.json({ error: "Invalid scores" }, { status: 400 });
+  if (
+    typeof team1Score !== "number" ||
+    typeof team2Score !== "number" ||
+    !Number.isInteger(team1Score) ||
+    !Number.isInteger(team2Score) ||
+    team1Score < 0 ||
+    team2Score < 0
+  ) {
+    return NextResponse.json({ error: "Invalid scores: must be non-negative integers" }, { status: 400 });
   }
 
   try {
