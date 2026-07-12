@@ -31,8 +31,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Prediction window not yet open" }, { status: 403 });
   }
 
-  if (team1Score < 0 || team2Score < 0) {
-    return NextResponse.json({ error: "Scores must be non-negative" }, { status: 400 });
+  if (
+    typeof team1Score !== "number" ||
+    typeof team2Score !== "number" ||
+    !Number.isInteger(team1Score) ||
+    !Number.isInteger(team2Score) ||
+    team1Score < 0 ||
+    team2Score < 0
+  ) {
+    return NextResponse.json({ error: "Scores must be valid non-negative integers" }, { status: 400 });
   }
 
   const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
