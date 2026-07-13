@@ -10,6 +10,36 @@ export type LeaderboardEntry = {
   rank: number;
 };
 
+interface SettingRow {
+  value: string;
+}
+
+interface UserRow {
+  user_id: number;
+  name: string;
+  username: string;
+  pfp_path: string | null;
+  is_hidden: number;
+}
+
+interface MatchRow {
+  id: number;
+  team1_score: number | null;
+  team2_score: number | null;
+  is_finished: number;
+}
+
+interface PredictionRow {
+  id: number;
+  user_id: number;
+  match_id: number;
+  team1_score: number;
+  team2_score: number;
+  submitted_at: string;
+  name: string;
+  pfp_path: string | null;
+}
+
 let cachedLeaderboard: LeaderboardEntry[] | null = null;
 let lastCacheTime = 0;
 
@@ -18,8 +48,8 @@ export function calculateLeaderboard(includeHidden = false): LeaderboardEntry[] 
     return cachedLeaderboard;
   }
 
-  const firstPtsSetting = db.prepare("SELECT value FROM settings WHERE key = 'first_correct_points'").get() as any;
-  const otherPtsSetting = db.prepare("SELECT value FROM settings WHERE key = 'other_correct_points'").get() as any;
+  const firstPtsSetting = db.prepare("SELECT value FROM settings WHERE key = 'first_correct_points'").get() as SettingRow | undefined;
+  const otherPtsSetting = db.prepare("SELECT value FROM settings WHERE key = 'other_correct_points'").get() as SettingRow | undefined;
   const firstPts = firstPtsSetting ? parseInt(firstPtsSetting.value) : 2;
   const otherPts = otherPtsSetting ? parseInt(otherPtsSetting.value) : 1;
 
@@ -78,7 +108,7 @@ export function calculateLeaderboard(includeHidden = false): LeaderboardEntry[] 
   });
 
   // 3. Ensure everyone (even with 0 points) is included
-  const allUsers = db.prepare("SELECT id as user_id, name, username, pfp_path, is_hidden FROM users").all() as any[];
+  const allUsers = db.prepare("SELECT id as user_id, name, username, pfp_path, is_hidden FROM users").all() as UserRow[];
   const userMap = new Map<number, typeof withPoints[0]>();
   withPoints.forEach(item => userMap.set(item.user_id, item));
 
@@ -130,7 +160,7 @@ export function calculateLeaderboard(includeHidden = false): LeaderboardEntry[] 
 export function getMatchResults(matchId: number) {
   const match = db
     .prepare("SELECT * FROM matches WHERE id = ?")
-    .get(matchId) as any;
+    .get(matchId) as MatchRow | undefined;
 
   if (!match || !match.is_finished) return null;
 
@@ -142,10 +172,10 @@ export function getMatchResults(matchId: number) {
         "WHERE p.match_id = ? " +
         "ORDER BY p.submitted_at ASC"
     )
-    .all(matchId);
+    .all(matchId) as PredictionRow[];
 
   const correct = predictions.filter(
-    (p: any) =>
+    (p: PredictionRow) =>
       p.team1_score === match.team1_score && p.team2_score === match.team2_score
   );
 
