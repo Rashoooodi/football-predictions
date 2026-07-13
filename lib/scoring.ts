@@ -31,7 +31,7 @@ export function calculateLeaderboard(includeHidden = false): LeaderboardEntry[] 
                 ROW_NUMBER() OVER(PARTITION BY p.match_id ORDER BY p.submitted_at ASC) as rnk
          FROM predictions p
          JOIN matches m ON p.match_id = m.id
-         WHERE m.is_finished = 1
+         WHERE (m.is_finished = 1 OR (m.is_finished = 0 AND m.team1_score IS NOT NULL AND m.team2_score IS NOT NULL))
            AND p.team1_score = m.team1_score
            AND p.team2_score = m.team2_score
        )
@@ -58,7 +58,7 @@ export function calculateLeaderboard(includeHidden = false): LeaderboardEntry[] 
       "SELECT p.user_id, MIN(p.submitted_at) as earliest " +
         "FROM predictions p " +
         "JOIN matches m ON p.match_id = m.id " +
-        "WHERE m.is_finished = 1 " +
+        "WHERE (m.is_finished = 1 OR (m.is_finished = 0 AND m.team1_score IS NOT NULL AND m.team2_score IS NOT NULL)) " +
         "AND p.team1_score = m.team1_score " +
         "AND p.team2_score = m.team2_score " +
         "GROUP BY p.user_id"
