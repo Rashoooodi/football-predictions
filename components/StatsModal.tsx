@@ -106,7 +106,7 @@ export default function StatsModal({ onClose, userName }: { onClose: () => void,
 
               {/* Line Chart */}
               <div className="card bg-white/[0.01] border-white/[0.03]">
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-4">Points Progression</h3>
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-4">Rank Progression</h3>
                 {data.progression.length === 0 ? (
                   <p className="text-xs text-gray-600 text-center py-5">No correct predictions yet.</p>
                 ) : (
@@ -120,18 +120,19 @@ export default function StatsModal({ onClose, userName }: { onClose: () => void,
                           fontSize={10}
                           tickMargin={8}
                         />
-                        <YAxis stroke="#4b5563" fontSize={10} width={30} />
+                        <YAxis stroke="#4b5563" fontSize={10} width={30} reversed={true} domain={[1, 'dataMax']} />
                         <Tooltip 
                           contentStyle={{ backgroundColor: '#07080f', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: '12px' }}
                           labelFormatter={(v) => new Date(v).toLocaleDateString()}
+                          formatter={(value: any) => [`Rank #${value}`, 'Rank']}
                         />
                         <Line 
                           type="monotone" 
-                          dataKey="points" 
-                          stroke="#f87171" 
+                          dataKey="rank" 
+                          stroke="#38bdf8" 
                           strokeWidth={3} 
-                          dot={{ fill: '#f87171', r: 4, strokeWidth: 0 }}
-                          activeDot={{ r: 6, fill: '#fca5a5' }}
+                          dot={{ fill: '#38bdf8', r: 4, strokeWidth: 0 }}
+                          activeDot={{ r: 6, fill: '#7dd3fc' }}
                         />
                       </LineChart>
                     </ResponsiveContainer>

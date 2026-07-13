@@ -30,19 +30,77 @@ export async function GET(
       ORDER BY m.kickoff_time ASC
     `).all() as any[];
 
-    // Extract the points progression for the target user
-    let cumulativePoints = 0;
-    const progression: { date: string; points: number }[] = [];
-
+    // Fetch all users to initialize points
+    const allUsers = db.prepare("SELECT id, is_hidden FROM users").all() as any[];
+    const activeUsers = allUsers.filter(u => !u.is_hidden);
+    
+    // Group correct predictions by match_id
+    const correctByMatch = new Map<number, any[]>();
     for (const row of allCorrect) {
-      if (row.user_id === targetUser.id) {
-        const pts = row.rnk === 1 ? firstPts : otherPts;
-        cumulativePoints += pts;
-        progression.push({
-          date: row.kickoff_time,
-          points: cumulativePoints
-        });
+      if (!correctByMatch.has(row.match_id)) correctByMatch.set(row.match_id, []);
+      correctByMatch.get(row.match_id)!.push(row);
+    }
+
+    // Fetch all finished matches in chronological order to build the timeline
+    const timelineMatches = db.prepare(`
+      SELECT id, kickoff_time 
+      FROM matches 
+      WHERE is_finished = 1 
+      ORDER BY kickoff_time ASC
+    `).all() as any[];
+
+    const userPoints = new Map<number, number>();
+    const userEarliest = new Map<number, string>();
+    activeUsers.forEach(u => {
+      userPoints.set(u.id, 0);
+      userEarliest.set(u.id, "");
+    });
+
+    const rankProgression: { date: string; rank: number; points: number }[] = [];
+    let targetCumulativePoints = 0;
+
+    for (const match of timelineMatches) {
+      const correctPreds = correctByMatch.get(match.id) || [];
+      
+      // Award points for this match
+      for (const cp of correctPreds) {
+        if (!userPoints.has(cp.user_id)) continue;
+        const pts = cp.rnk === 1 ? firstPts : otherPts;
+        userPoints.set(cp.user_id, userPoints.get(cp.user_id)! + pts);
+        
+        // Track earliest correct prediction for tiebreakers
+        const currentEarliest = userEarliest.get(cp.user_id);
+        if (!currentEarliest || cp.submitted_at < currentEarliest) {
+          userEarliest.set(cp.user_id, cp.submitted_at);
+        }
       }
+
+      // Calculate ranks after this match
+      const leaderboard = Array.from(userPoints.entries()).map(([uId, pts]) => ({
+        user_id: uId,
+        points: pts,
+        earliest: userEarliest.get(uId)
+      }));
+
+      leaderboard.sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        if (a.earliest && b.earliest) return a.earliest.localeCompare(b.earliest);
+        if (a.earliest) return 1;
+        if (b.earliest) return -1;
+        return 0;
+      });
+
+      const rank = leaderboard.findIndex(u => u.user_id === targetUser.id) + 1;
+      const tPoints = userPoints.get(targetUser.id) || 0;
+      targetCumulativePoints = tPoints;
+
+      // Only add to progression if the rank or points changed to keep chart clean, 
+      // OR if it's the very first or very last match.
+      rankProgression.push({
+        date: match.kickoff_time,
+        rank: rank > 0 ? rank : activeUsers.length,
+        points: tPoints
+      });
     }
 
     // Get team accuracy stats and recent form for this user
@@ -112,8 +170,8 @@ export async function GET(
     return NextResponse.json({
       displayName: targetUser.name,
       username: targetUser.username,
-      totalPoints: cumulativePoints,
-      progression,
+      totalPoints: targetCumulativePoints,
+      progression: rankProgression,
       accuracy,
       recentForm,
       badges
