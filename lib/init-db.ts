@@ -77,8 +77,8 @@ export function initDb() {
   if (!admin) {
     db.prepare(
       "INSERT INTO users (name, username, is_admin) VALUES (?, ?, 1)"
-    ).run("Rashid", "admin");
-    console.log("Created admin user: Rashid (admin)");
+    ).run("Admin", "admin");
+    console.log("Created admin user: Admin (admin)");
   }
 }
 
