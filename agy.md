@@ -1,6 +1,6 @@
-# NBR Predictions: AI & Developer Central Brain
+# Football Prediction: AI & Developer Central Brain
 
-Welcome to the **NBR Predictions** repository. This document is the absolute source of truth for the entire project's architecture, infrastructure, deployment workflow, business logic, and design philosophy. 
+Welcome to the **Football Prediction** repository. This document is the absolute source of truth for the entire project's architecture, infrastructure, deployment workflow, business logic, and design philosophy. 
 If you are an AI assistant (like Antigravity) or a new developer, **READ THIS ENTIRE FILE** before making any changes.
 
 ---
