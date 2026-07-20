@@ -1,4 +1,4 @@
-# 🏆 NBR Predictions Tracker
+# 🏆 WORLD CUP Predictions Tracker
 
 A private World Cup prediction tracker designed exclusively for family tournaments. Features a sleek dark mode UI, secure phone-number login, an advanced admin dashboard, automated leaderboards, and instant WhatsApp sharing.
 
@@ -58,31 +58,6 @@ You can access the dedicated admin panel at `/admin` to manage the entire tourna
 - **Matches:** Create upcoming matches by selecting two countries from the searchable dropdown, setting the kickoff time, and locking the prediction deadline.
 - **Results:** Enter the final score for completed matches. The global leaderboard and user stats will calculate and update automatically!
 - **History Import:** Migrate old predictions from WhatsApp by selecting a match, entering each family member's historical prediction, and clicking Import.
-
----
-
-## 🌍 Deployment
-
-### 1. Production (DigitalOcean)
-To securely deploy the latest code to the live production server (`production.example.com`), we use an automated script that pulls backups, protects your `.env` and `football.db`, builds the Next.js bundle remotely, and reloads the server with zero downtime.
-```bash
-bash scripts/push-to-prod.sh
-```
-
-### 2. Staging (Tencent VPS)
-If you need to push your code AND your local testing database (`football.db`) to a staging server for review, use SSH key-based authentication and avoid committing or using plaintext passwords.
-
-Example (sanitized):
-```bash
-# Use an SSH key and a placeholder host. Replace with your SSH key and host.
-rsync -avz -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" --exclude '.next' --exclude 'node_modules' --exclude 'public/uploads' --exclude 'football.db' --exclude '.git' ./ ubuntu@staging.example.com:~/nbr-predictions/
-# To copy a local DB explicitly (careful: overwrites remote DB):
-scp -i ~/.ssh/id_rsa football.db ubuntu@staging.example.com:~/nbr-predictions/football.db
-# Then log in and run build/restart on the server (run these on the server, not via plaintext-password SSH):
-ssh -i ~/.ssh/id_rsa ubuntu@staging.example.com 'cd nbr-predictions && npm install && npm run build && pm2 restart nbr-predictions'
-```
-
-Note: Do NOT use `sshpass` or embed passwords in scripts. If you manage deploy automation, use your CI provider's secret store or an SSH key with restricted access.
 
 ---
 
