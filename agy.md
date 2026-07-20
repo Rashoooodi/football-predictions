@@ -123,11 +123,11 @@ To prevent catastrophic data wipes, the following are strictly blocked from bein
 The application runs across a specialized dual-server setup:
 
 ### 🖥️ Servers & Routing
-* **New Server (Primary)**: `production.example.com` handling `new.production.example.com`. This is the high-performance core running Next.js via PM2.
-* **Old Server (Fallback)**: `staging.example.com` routing legacy traffic with instant 301 redirects to ensure absolute zero downtime during DNS propagation.
+* **New Server (Primary)**: `production.example.com` handling `production.example.com`. This is the high-performance core running Next.js via PM2.
+* **Old Server (Fallback)**: `staging.example.com` routing legacy traffic with appropriate DNS and maintenance procedures.
 
 ### 📈 Grafana Dashboard
-* Grafana is installed on the New Server and natively accessible at `new.production.example.com/grafana`.
+* Grafana is installed on the New Server and accessible at `grafana.production.example.com` (replace with your monitoring host).
 * It queries the live `football.db` SQLite database using the `frser-sqlite-datasource` plugin for real-time app metrics.
 * **Security Bypass**: A systemd override (`ProtectHome=read-only`) is injected into the Grafana service to bypass Ubuntu's strict sandbox and grant it read access to the database inside the `ubuntu` home directory.
 

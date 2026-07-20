@@ -244,7 +244,7 @@ To change the admin username, edit `lib/init-db.ts`:
 // Find this block and change the values:
 db.prepare(
   "INSERT INTO users (name, username, is_admin) VALUES (?, ?, 1)"
-).run("Rashid", "admin");  // ← Change these
+).run("Admin", "admin");  // ← Change these to your desired admin account
 ```
 Then **delete the database** and restart so the new admin is seeded.
 
