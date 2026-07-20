@@ -16,13 +16,13 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "NBR World Cup Predictions",
+  title: "Football Prediction",
   description: "World Cup prediction tracker",
   manifest: "/manifest.json",
-  appleWebApp: {
-    statusBarStyle: "black-translucent",
-    title: "NBR Predictions",
-  },
+    appleWebApp: {
+      statusBarStyle: "black-translucent",
+      title: "Football Prediction",
+    },
   other: {
     "mobile-web-app-capable": "yes"
   }
@@ -50,8 +50,8 @@ export default function RootLayout({
         <main className="pb-32 min-h-[100dvh] flex flex-col">
           <div className="flex-grow">{children}</div>
           <footer className="py-8 text-center text-[10px] text-gray-400 font-medium">
-            <p>&copy; {new Date().getFullYear()} support.example.com</p>
-            <p className="mt-1">Support: <a href="mailto:him@support.example.com" className="hover:text-white transition-colors">him@support.example.com</a></p>
+            <p>&copy; {new Date().getFullYear()} Football Prediction</p>
+            <p className="mt-1">Support: <a href="mailto:support@example.com" className="hover:text-white transition-colors">support@example.com</a></p>
           </footer>
         </main>
         <NavigationBar />
@@ -85,4 +85,3 @@ export default function RootLayout({
     </html>
   );
 }
-
