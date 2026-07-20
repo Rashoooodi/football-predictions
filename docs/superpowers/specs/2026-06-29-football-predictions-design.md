@@ -211,13 +211,13 @@ After a match ends:
   🏆 Match Result: Brazil 2-1 Argentina
   
   ✅ Correct predictions:
-  1. Rashid (2-1) - 1st place!
+  1. Example User (2-1) - 1st place!
   2. Ahmed (2-1) - 2nd place
   
   ❌ Wrong: Everyone else
   
   Leaderboard:
-  1. Rashid - 5pts
+  1. Example User - 5pts
   2. Ahmed - 4pts
   3. Omar - 3pts
   ```
