@@ -1,4 +1,8 @@
-# 🏆 NBR Predictions Tracker
+# ⚠️ Sanitized Copy — Rotate Secrets Before Use
+
+This repository copy has been sanitized for public release. DO NOT deploy or publish without rotating secrets (JWT_SECRET, VAPID keys, FIFA_API_TOKEN, Telegram tokens, SSH keys) and verifying there are no remaining secrets. See SECURITY.md for details.
+
+# 🏆 Football Prediction (Sanitized)
 
 A family-friendly football prediction platform. Features a sleek dark mode UI, username + PIN login (see Authentication below), an admin dashboard, automated leaderboards, and WhatsApp sharing.
 
