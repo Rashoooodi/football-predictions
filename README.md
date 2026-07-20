@@ -51,7 +51,7 @@ You can access the dedicated admin panel at `/admin` to manage the entire tourna
 
 **Default Admin Login:**
 - **Phone:** `+0000000000`
-- **Name:** Rashid
+- **Name:** Example User
 
 ### 📋 Key Admin Actions:
 - **Users:** Add family members by entering their name, phone number, and an optional profile picture.

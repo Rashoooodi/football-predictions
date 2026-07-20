@@ -69,7 +69,7 @@ football-predictions/
 - [ ] **Step 1: Create Next.js project**
 
 ```bash
-cd /Users/rashidjanahi/projects/football-predictions
+cd /Users/<your-user>/projects/football-predictions
 npx create-next-app@latest . --typescript --tailwind --app --no-src-dir --no-eslint --use-npm
 ```
 
@@ -237,8 +237,8 @@ export function initDb() {
   if (!admin) {
     db.prepare(
       "INSERT INTO users (name, phone, is_admin) VALUES (?, ?, 1)"
-    ).run("Rashid", "+0000000000");
-    console.log("Created admin user: Rashid (+0000000000)");
+    ).run("Admin", "+0000000000");
+    console.log("Created admin user: Admin (+0000000000)");
   }
 }
 

@@ -99,7 +99,7 @@ export default function AdminAnnouncementPage() {
             <textarea
               value={announcement}
               onChange={(e) => setAnnouncement(e.target.value)}
-              placeholder="e.g. Congrats to Rashid for winning the last match! 🏆"
+              placeholder="e.g. Congrats to the winner for winning the last match! 🏆"
               maxLength={150}
               rows={4}
               className="w-full bg-[#08090f] border border-white/[0.08] focus:border-red-500/50 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none transition-all duration-300 resize-none font-outfit"
