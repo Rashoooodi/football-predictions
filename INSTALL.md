@@ -75,7 +75,7 @@ echo JWT_SECRET=your-secret-key-change-this-to-something-unique > .env.local
 
 Example of a strong secret:
 ```
-***REMOVED***
+JWT_SECRET=YOUR_JWT_SECRET_HERE
 ```
 
 ### Step 4 — Start the app
