@@ -2,7 +2,7 @@
 
 ## Overview
 
-A lightweight web app for tracking football match predictions within a family during World Cup season. Built with Next.js + SQLite, hosted via Tailscale funnel. ~10 users, phone-number login, admin-managed accounts and matches.
+A lightweight web app for tracking football match predictions within a family during World Cup season. Built with Next.js + SQLite, hosted via Tailscale funnel. ~10 users, username + PIN login, admin-managed accounts and matches.
 
 ---
 
@@ -28,7 +28,7 @@ Single project structure. Run with `npm start` in production, `npm run dev` for 
 |--------|------|-------------|
 | id | INTEGER PRIMARY KEY | Auto-increment |
 | name | TEXT NOT NULL | Display name |
-| phone | TEXT UNIQUE NOT NULL | Login identifier |
+| username | TEXT UNIQUE NOT NULL | Login identifier |
 | pfp_path | TEXT | Filename in public/uploads/ |
 | is_admin | BOOLEAN | Default false |
 
@@ -82,10 +82,10 @@ Stored as JSON array in `data/countries.json`. Admin selects from searchable dro
 ## Pages & Routes
 
 ### `/` — Login Page
-- Phone number input field
+- Username input field (and PIN input when required)
 - "Login" button
 - Validates against users table
-- Sets session cookie (simple JWT or encrypted cookie)
+- Sets session cookie (JWT)
 - Redirect to `/leaderboard`
 
 ### `/leaderboard` — Main Dashboard
@@ -132,10 +132,11 @@ Click on any match → opens match detail view with all predictions
 ### `/admin` — Admin Panel (Admin Only)
 
 **Tab 1: Manage Users**
-- List of all users with PFP, name, phone
+- List of all users with PFP, name, username
 - "Add User" form:
   - Name input
-  - Phone number input
+  - Username input
+  - Optional PIN (leave blank for user to set on first login)
   - PFP upload (image file)
 - Edit/delete existing users
 
@@ -236,8 +237,8 @@ After a match ends:
 - Borders: `#2a2a2a`
 - Status colors: Green/Yellow/Gray as noted above
 
-### Mobile-First Layout
-- Designed for phone screens first
+-### Mobile-First Layout
+- Designed for mobile screens first
 - Responsive breakpoints for tablet/desktop
 - Touch-friendly buttons and inputs
 - Bottom navigation on mobile
@@ -295,7 +296,7 @@ football-predictions/
 
 ## Session Management
 
-- Login: validate phone → set encrypted cookie with user ID
+- Login: validate username (and PIN when required) → set encrypted cookie with user ID
 - Cookie: `session` with JWT (user_id, is_admin)
 - Middleware: check session on all routes except `/`
 - Admin routes: check `is_admin` flag
@@ -305,7 +306,7 @@ football-predictions/
 ## API Routes
 
 ```
-POST /api/login              # Phone login
+POST /api/login              # Username / PIN login
 GET  /api/users              # List users (admin)
 POST /api/users              # Create user (admin)
 PUT  /api/users/[id]         # Update user (admin)
