@@ -1,6 +1,6 @@
 # 🏆 NBR Predictions Tracker
 
-A private World Cup prediction tracker designed exclusively for family tournaments. Features a sleek dark mode UI, secure phone-number login, an advanced admin dashboard, automated leaderboards, and instant WhatsApp sharing.
+A family-friendly football prediction platform. Features a sleek dark mode UI, username + PIN login (see Authentication below), an admin dashboard, automated leaderboards, and WhatsApp sharing.
 
 ---
 
@@ -50,11 +50,15 @@ A private World Cup prediction tracker designed exclusively for family tournamen
 You can access the dedicated admin panel at `/admin` to manage the entire tournament.
 
 **Default Admin Login:**
-- **Phone:** `+0000000000`
-- **Name:** Example User
+- **Username:** `admin`
+- **Name:** Admin
+
+Authentication (important)
+
+This project uses a username + PIN authentication model. On first login, seeded accounts without a PIN will require the user to supply a new PIN (minimum 4 digits). The server stores the PIN hashed; subsequent logins require the PIN. Sessions are cookie-based JWTs (via jose). Update the admin PIN on first login or via the init script as required.
 
 ### 📋 Key Admin Actions:
-- **Users:** Add family members by entering their name, phone number, and an optional profile picture.
+- **Users:** Add family members by entering their name, username, and an optional profile picture. Optionally set an initial PIN or leave blank so users set it on first login.
 - **Matches:** Create upcoming matches by selecting two countries from the searchable dropdown, setting the kickoff time, and locking the prediction deadline.
 - **Results:** Enter the final score for completed matches. The global leaderboard and user stats will calculate and update automatically!
 - **History Import:** Migrate old predictions from WhatsApp by selecting a match, entering each family member's historical prediction, and clicking Import.
