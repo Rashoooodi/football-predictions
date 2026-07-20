@@ -1,7 +1,8 @@
 import crypto from "crypto";
 
 export function hashPin(pin: string): string {
-  const pepper = process.env.JWT_SECRET || "nbr-secure-pepper";
+  const pepper = process.env.JWT_SECRET;
+  if (!pepper) throw new Error("FATAL: JWT_SECRET environment variable is missing (auth-utils). Please set JWT_SECRET in your environment.");
   return crypto.createHash("sha256").update(pin + pepper).digest("hex");
 }
 
