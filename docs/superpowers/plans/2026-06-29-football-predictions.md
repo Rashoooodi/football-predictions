@@ -310,7 +310,7 @@ export function getCountryByName(name: string): Country | undefined {
 npx tsx lib/init-db.ts
 ```
 
-Expected output: `Created admin user: Rashid (+0000000000)` (first run) or no output (second run).
+Expected output: `Created admin user: Admin (+0000000000)` (first run) or no output (second run).
 
 Verify `football.db` was created:
 
@@ -2960,7 +2960,7 @@ World Cup prediction tracker for the family.
 
 ## Admin Access
 
-Default admin: phone `+0000000000` (Rashid)
+Default admin: phone `+0000000000` (Admin)
 
 ## Hosting via Tailscale
 

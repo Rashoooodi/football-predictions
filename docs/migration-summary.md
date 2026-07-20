@@ -14,7 +14,7 @@ This document summarizes the architecture, database schema, pages, and API endpo
 ### 1. `users`
 - `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
 - `name` (TEXT)
-- `phone` (TEXT UNIQUE) - *e.g., `+0000000000`*
+-- `phone` (TEXT UNIQUE) - *e.g., `+0000000000`*
 - `pfp_path` (TEXT NULL) - *e.g., `/uploads/12345.jpg`*
 - `is_admin` (INTEGER DEFAULT 0)
 
