@@ -70,10 +70,19 @@ bash scripts/push-to-prod.sh
 ```
 
 ### 2. Staging (Tencent VPS)
-If you need to push your code **AND** your local testing database (`football.db`) to the Staging server for a friend to review, use this heavy-duty sync command (requires `sshpass`):
+If you need to push your code AND your local testing database (`football.db`) to a staging server for review, use SSH key-based authentication and avoid committing or using plaintext passwords.
+
+Example (sanitized):
 ```bash
-sshpass -p 'REDACTED_PASSWORD' rsync -avz -e "ssh -o StrictHostKeyChecking=no" --exclude '.next' --exclude 'node_modules' --exclude 'public/uploads' --exclude 'football.db' --exclude 'football.db-*' --exclude '.git' ./ ubuntu@staging.example.com:~/nbr-predictions/ && sshpass -p 'REDACTED_PASSWORD' scp -o StrictHostKeyChecking=no football.db ubuntu@staging.example.com:~/nbr-predictions/football.db && sshpass -p 'REDACTED_PASSWORD' ssh -o StrictHostKeyChecking=no ubuntu@staging.example.com 'cd nbr-predictions && npm install && npm run build && pm2 restart nbr-predictions'
+# Use an SSH key and a placeholder host. Replace with your SSH key and host.
+rsync -avz -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" --exclude '.next' --exclude 'node_modules' --exclude 'public/uploads' --exclude 'football.db' --exclude '.git' ./ ubuntu@staging.example.com:~/nbr-predictions/
+# To copy a local DB explicitly (careful: overwrites remote DB):
+scp -i ~/.ssh/id_rsa football.db ubuntu@staging.example.com:~/nbr-predictions/football.db
+# Then log in and run build/restart on the server (run these on the server, not via plaintext-password SSH):
+ssh -i ~/.ssh/id_rsa ubuntu@staging.example.com 'cd nbr-predictions && npm install && npm run build && pm2 restart nbr-predictions'
 ```
+
+Note: Do NOT use `sshpass` or embed passwords in scripts. If you manage deploy automation, use your CI provider's secret store or an SSH key with restricted access.
 
 ---
 
