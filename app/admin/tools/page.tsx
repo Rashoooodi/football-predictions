@@ -166,7 +166,7 @@ export default function AdminToolsPage() {
 
   function generateBroadcastMessage(lb: any[], streakList: any[], upcoming: Match[]) {
     const lines: string[] = [];
-    lines.push("🏆 *NBR PREDICTIONS UPDATE* 🏆");
+    lines.push("🏆 *Football Prediction UPDATE* 🏆");
     lines.push("━━━━━━━━━━━━━━━━━━");
     lines.push("");
 
@@ -207,7 +207,7 @@ export default function AdminToolsPage() {
       lines.push("");
     }
 
-    lines.push("👉 Submit predictions now on the PWA app: NBR Predictions!");
+    lines.push("👉 Submit predictions now on the PWA app: Football Prediction!");
     setBroadcastText(lines.join("\n"));
   }
 
@@ -338,7 +338,7 @@ export default function AdminToolsPage() {
                 ) : (
                   <div className="flex flex-wrap gap-2">
                     {item.missingUsers.map((u) => {
-                      const nudgeMsg = encodeURIComponent(`Hey ${u.name}! Don't forget to predict ${item.match.team1_country} vs ${item.match.team2_country} on NBR Predictions before lock! ⚽`);
+                      const nudgeMsg = encodeURIComponent(`Hey ${u.name}! Don't forget to predict ${item.match.team1_country} vs ${item.match.team2_country} on Football Prediction before lock! ⚽`);
                       return (
                         <div
                           key={u.id}

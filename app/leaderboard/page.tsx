@@ -394,7 +394,7 @@ export default function LeaderboardPage() {
               <span className="text-lg">📲</span>
               <div className="text-left">
                 <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block">Web App Available</span>
-                <p className="text-[11px] text-gray-300 mt-0.5">Install the NBR App to receive push alerts and prediction locks!</p>
+                <p className="text-[11px] text-gray-300 mt-0.5">Install the Football Prediction App to receive push alerts and prediction locks!</p>
               </div>
             </div>
             <button

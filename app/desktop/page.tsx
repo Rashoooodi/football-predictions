@@ -698,9 +698,7 @@ export default function DesktopDashboard() {
         <div className="flex flex-col items-center text-center mb-8">
           <div className="w-16 h-16 bg-gradient-to-tr from-red-500 to-orange-400 rounded-2xl flex items-center justify-center shadow-[0_8px_24px_rgba(16,185,129,0.3)] mb-4 hover:rotate-12 transition-transform duration-500"><span className="text-3xl select-none">⚽</span></div>
           <h1 className="text-3xl font-extrabold tracking-tight text-white font-outfit mb-2 leading-tight">
-            NBR<br />
-            World Cup<br />
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-red-400 to-orange-400">Predictions</span>
+            Football Prediction
           </h1>
           <p className="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-black">Desktop Console</p>
         </div>
@@ -736,7 +734,7 @@ export default function DesktopDashboard() {
       <header className="shrink-0 border-b border-white/[0.05] bg-[#08090f]/70 backdrop-blur-xl px-6 py-3.5 flex items-center justify-between z-20">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-gradient-to-tr from-red-500 to-orange-400 rounded-xl flex items-center justify-center shadow-[0_4px_12px_rgba(16,185,129,0.3)] shrink-0"><span className="text-base select-none">⚽</span></div>
-          <div><h1 className="text-xs font-black tracking-tight font-outfit leading-tight">NBR World Cup <span className="bg-clip-text text-transparent bg-gradient-to-r from-red-400 to-orange-400">Predictions</span></h1><span className="text-[9px] text-gray-600 font-black uppercase tracking-[0.18em]">Desktop Console</span></div>
+          <div><h1 className="text-xs font-black tracking-tight font-outfit leading-tight">Football Prediction</h1><span className="text-[9px] text-gray-600 font-black uppercase tracking-[0.18em]">Desktop Console</span></div>
           {hasLiveMatch && <span className="flex items-center gap-1.5 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[9px] font-black uppercase px-2.5 py-1 rounded-full animate-pulse ml-2"><span className="w-1.5 h-1.5 bg-rose-500 rounded-full" />Live</span>}
           {tournamentEnded && <span className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/25 text-amber-400 text-[9px] font-black uppercase px-2.5 py-1 rounded-full ml-2">🏆 Tournament Over</span>}
         </div>
@@ -959,7 +957,7 @@ export default function DesktopDashboard() {
                 <div className="text-center mb-10">
                   <div className="text-6xl mb-4 animate-bounce select-none">🏆</div>
                   <h2 className="text-4xl font-black font-outfit bg-clip-text text-transparent bg-gradient-to-r from-amber-300 via-yellow-400 to-orange-400">Hall of Fame</h2>
-                  <p className="text-sm text-gray-500 mt-2">World Cup 2026 · NBR World Cup Predictions</p>
+                  <p className="text-sm text-gray-500 mt-2">Football Prediction</p>
                   {!tournamentEnded && <Badge color="gray" >Tournament still in progress</Badge>}
                   {tournamentEnded && <Badge color="amber">🎉 Tournament Complete</Badge>}
                 </div>

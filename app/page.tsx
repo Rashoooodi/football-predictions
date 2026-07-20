@@ -185,7 +185,7 @@ export default function LoginPage() {
       <div className="min-h-screen bg-[#05060e] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin" />
-          <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest">Loading NBR...</p>
+          <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest">Loading Football Prediction...</p>
         </div>
       </div>
     );
@@ -208,7 +208,7 @@ export default function LoginPage() {
               <p className="text-[10px] uppercase font-black tracking-widest text-red-400 mt-1">Administrator Access</p>
             </div>
             
-            <p className="text-xs text-gray-400 leading-relaxed px-2">Choose which version of NBR Predictions you would like to open:</p>
+            <p className="text-xs text-gray-400 leading-relaxed px-2">Choose which version of Football Prediction you would like to open:</p>
             
             <div className="space-y-3">
               <button
@@ -246,7 +246,7 @@ export default function LoginPage() {
                 <span className="text-3xl select-none">⚽</span>
               </div>
               <h1 className="text-3xl font-extrabold tracking-tight text-white mb-1.5 font-outfit">
-                NBR<br />
+                Football Prediction<br />
                 World Cup<br />
                 <span className="text-gradient">Predictions</span>
               </h1>
@@ -479,7 +479,7 @@ export default function LoginPage() {
                   onClick={handlePWAInstall}
                   className="w-full py-2.5 px-4 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-black font-black text-xs uppercase tracking-wider transition-all active:scale-[0.98] flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/10"
                 >
-                  <span>📲</span> Install NBR Predictions App
+                  <span>📲</span> Install Football Prediction App
                 </button>
                 {installStatus && (
                   <p className="text-[10px] text-indigo-300 font-semibold leading-relaxed animate-fade-in">{installStatus}</p>

@@ -274,7 +274,7 @@ export default function UsersPage() {
             <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5 ml-1">Name</label>
             <input
               type="text"
-              placeholder="e.g. NBR Member"
+              placeholder="e.g. Football Prediction Member"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="input text-xs py-2.5 px-3 bg-[#08090f] border-white/[0.08]"
