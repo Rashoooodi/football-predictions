@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build a dark-mode Next.js web app for tracking football match predictions within a family, with phone-number login, admin-managed matches, and WhatsApp history import.
+**Goal:** Build a dark-mode Next.js web app for tracking football match predictions within a family, with username + PIN login, admin-managed matches, and WhatsApp history import.
 
 **Architecture:** Next.js App Router with server actions, SQLite database via better-sqlite3, Tailwind CSS dark mode, file-based PFP storage, hosted via Tailscale funnel.
 
@@ -197,7 +197,7 @@ export function initDb() {
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
-      phone TEXT UNIQUE NOT NULL,
+      username TEXT UNIQUE NOT NULL,
       pfp_path TEXT,
       is_admin INTEGER DEFAULT 0
     );
@@ -233,12 +233,12 @@ export function initDb() {
   `);
 
   // Create admin user if none exists
-  const admin = db.prepare("SELECT id FROM users WHERE phone = ?").get("+0000000000");
+  const admin = db.prepare("SELECT id FROM users WHERE username = ?").get("admin");
   if (!admin) {
     db.prepare(
-      "INSERT INTO users (name, phone, is_admin) VALUES (?, ?, 1)"
-    ).run("Admin", "+0000000000");
-    console.log("Created admin user: Admin (+0000000000)");
+      "INSERT INTO users (name, username, is_admin) VALUES (?, ?, 1)"
+    ).run("Admin", "admin");
+    console.log("Created admin user: Admin (admin)");
   }
 }
 
@@ -409,10 +409,10 @@ export function logout(): void {
   cookies().delete("session");
 }
 
-export function authenticatePhone(phone: string): number | null {
+export function authenticateUsername(username: string): number | null {
   const user = db
-    .prepare("SELECT id FROM users WHERE phone = ?")
-    .get(phone) as { id: number } | undefined;
+    .prepare("SELECT id FROM users WHERE username = ?")
+    .get(username.trim().toLowerCase()) as { id: number } | undefined;
   return user?.id ?? null;
 }
 ```
@@ -532,16 +532,25 @@ Create `app/api/login/route.ts`:
 
 ```typescript
 import { NextRequest, NextResponse } from "next/server";
-import { authenticatePhone, createSession } from "@/lib/auth";
+import { authenticateUsername, createSession, verifyPin } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
-  const { phone } = await request.json();
+  const { username, pin } = await request.json();
 
-  if (!phone || typeof phone !== "string") {
-    return NextResponse.json({ error: "Phone number required" }, { status: 400 });
+  if (!username || typeof username !== "string") {
+    return NextResponse.json({ error: "Username required" }, { status: 400 });
   }
 
-  const userId = authenticatePhone(phone.trim());
+  const userId = authenticateUsername(username.trim());
+  if (!userId) {
+    return NextResponse.json({ error: "Account not found. Ask the admin to add you." }, { status: 404 });
+  }
+
+  // If user has a PIN set, require it. If not, the client should prompt the user to set one.
+  if (pin && typeof pin === "string") {
+    const ok = verifyPin(userId, pin.trim());
+    if (!ok) return NextResponse.json({ error: "Invalid PIN" }, { status: 401 });
+  }
 
   if (!userId) {
     return NextResponse.json(
@@ -567,7 +576,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const [phone, setPhone] = useState("");
+  const [username, setUsername] = useState("");
+  const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -580,7 +590,7 @@ export default function LoginPage() {
     const res = await fetch("/api/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone }),
+      body: JSON.stringify({ username, pin }),
     });
 
     if (res.ok) {
@@ -596,16 +606,23 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="card max-w-sm w-full">
         <h1 className="text-2xl font-bold mb-1">⚽ Predictions</h1>
-        <p className="text-gray-400 text-sm mb-6">Enter your phone number to login</p>
+        <p className="text-gray-400 text-sm mb-6">Enter your username (and PIN if you have one)</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
-            type="tel"
-            placeholder="+0000000000"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            type="text"
+            placeholder="admin"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             className="input"
             required
+          />
+          <input
+            type="password"
+            placeholder="PIN (4 digits)"
+            value={pin}
+            onChange={(e) => setPin(e.target.value)}
+            className="input mt-2"
           />
           {error && <p className="text-red-400 text-sm">{error}</p>}
           <button type="submit" disabled={loading} className="btn-primary w-full">
@@ -633,7 +650,7 @@ npm run dev
 
 ```bash
 git add -A
-git commit -m "feat: phone number login page with JWT session"
+  git commit -m "feat: username+PIN login page with JWT session"
 ```
 
 ---
@@ -707,18 +724,19 @@ export async function POST(request: NextRequest) {
 
   const formData = await request.formData();
   const name = formData.get("name") as string;
-  const phone = formData.get("phone") as string;
+  const username = formData.get("username") as string;
   const pfp = formData.get("pfp") as File | null;
 
-  if (!name || !phone) {
-    return NextResponse.json({ error: "Name and phone required" }, { status: 400 });
+  if (!name || !username) {
+    return NextResponse.json({ error: "Name and username required" }, { status: 400 });
   }
 
   let pfpPath: string | null = null;
   if (pfp && pfp.size > 0) {
     const sharp = (await import("sharp")).default;
     const buf = Buffer.from(await pfp.arrayBuffer());
-    const filename = `${Date.now()}-${phone.replace(/[^0-9]/g, "")}.jpg`;
+    const safeName = username.replace(/[^a-z0-9_-]/gi, "");
+    const filename = `${Date.now()}-${safeName}.jpg`;
     const filepath = `public/uploads/${filename}`;
     await sharp(buf).resize(200, 200, { fit: "cover" }).jpeg().toFile(filepath);
     pfpPath = `/uploads/${filename}`;
@@ -726,11 +744,11 @@ export async function POST(request: NextRequest) {
 
   try {
     const result = db
-      .prepare("INSERT INTO users (name, phone, pfp_path) VALUES (?, ?, ?)")
-      .run(name, phone, pfpPath);
+      .prepare("INSERT INTO users (name, username, pfp_path) VALUES (?, ?, ?)")
+      .run(name, username, pfpPath);
     return NextResponse.json({ id: result.lastInsertRowid });
   } catch {
-    return NextResponse.json({ error: "Phone number already exists" }, { status: 409 });
+    return NextResponse.json({ error: "Username already exists" }, { status: 409 });
   }
 }
 ```
@@ -771,7 +789,7 @@ import { useState, useEffect } from "react";
 type User = {
   id: number;
   name: string;
-  phone: string;
+  username: string;
   pfp_path: string | null;
   is_admin: number;
 };
@@ -779,7 +797,7 @@ type User = {
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [username, setUsername] = useState("");
   const [pfp, setPfp] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -798,7 +816,7 @@ export default function UsersPage() {
 
     const formData = new FormData();
     formData.append("name", name);
-    formData.append("phone", phone);
+    formData.append("username", username);
     if (pfp) formData.append("pfp", pfp);
 
     const res = await fetch("/api/users", { method: "POST", body: formData });
@@ -828,7 +846,7 @@ export default function UsersPage() {
       <form onSubmit={handleSubmit} className="card mb-6 space-y-3">
         <h2 className="font-semibold">Add New User</h2>
         <input className="input" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} required />
-        <input className="input" placeholder="+973..." value={phone} onChange={(e) => setPhone(e.target.value)} required />
+        <input className="input" placeholder="username" value={username} onChange={(e) => setUsername(e.target.value)} required />
         <input type="file" accept="image/*" onChange={(e) => setPfp(e.target.files?.[0] ?? null)} className="input" />
         {error && <p className="text-red-400 text-sm">{error}</p>}
         <button type="submit" disabled={loading} className="btn-primary">
@@ -848,7 +866,7 @@ export default function UsersPage() {
             )}
             <div className="flex-1">
               <div className="font-medium">{u.name} {u.is_admin ? "👑" : ""}</div>
-              <div className="text-sm text-gray-400">{u.phone}</div>
+              <div className="text-sm text-gray-400">{u.username}</div>
             </div>
             {!u.is_admin && (
               <button onClick={() => handleDelete(u.id)} className="text-red-400 text-sm">Delete</button>
@@ -874,11 +892,11 @@ echo "uploads here" > public/uploads/.gitkeep
 npm run dev
 ```
 
-1. Login as admin (+0000000000)
+1. Login as admin (admin)
 2. Go to http://localhost:3000/admin → Users
-3. Add a user (e.g., "Ahmed", "+97311112222", with a photo)
+3. Add a user (e.g., "Ahmed", username `ahmed`, with a photo)
 4. Verify user appears in list with photo
-5. Try adding same phone again → should show "already exists" error
+5. Try adding same username again → should show "already exists" error
 6. Delete the user → should disappear
 
 - [ ] **Step 7: Commit**
@@ -2960,7 +2978,7 @@ World Cup prediction tracker for the family.
 
 ## Admin Access
 
-Default admin: phone `+0000000000` (Admin)
+Default admin: username `admin` (Admin)
 
 ## Hosting via Tailscale
 
@@ -2973,7 +2991,7 @@ Default admin: phone `+0000000000` (Admin)
 
 1. Login as admin
 2. Go to /admin - Users
-3. Add each family member with their phone number and photo
+3. Add each family member with their username and photo (optional PIN)
 ```
 
 - [ ] **Step 4: Test full flow end-to-end**
