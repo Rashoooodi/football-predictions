@@ -1,16 +1,16 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    serverActions: {
-      bodySizeLimit: "5mb",
-      allowedOrigins: [
-        "production.example.com",
-        "www.production.example.com",
-        "localhost:5000",
-        "localhost:3000",
-        "staging.example.com",
-      ],
-    },
+      serverActions: {
+        bodySizeLimit: "5mb",
+        // Allowed origins are configurable via environment variable for public release
+        allowedOrigins: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [
+          "production.example.com",
+          "staging.example.com",
+          "localhost:5000",
+          "localhost:3000",
+        ],
+      },
     instrumentationHook: true,
   },
   async headers() {
