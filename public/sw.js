@@ -1,4 +1,4 @@
-const CACHE_NAME = "nbr-v1";
+const CACHE_NAME = "football-prediction-v1";
 
 self.addEventListener("install", (e) => {
   self.skipWaiting();
@@ -16,10 +16,10 @@ self.addEventListener("fetch", (event) => {
 self.addEventListener("push", (e) => {
   if (!e.data) return;
   let data;
-  try { data = e.data.json(); } catch { data = { title: "NBR Predictions", body: e.data.text() }; }
+  try { data = e.data.json(); } catch { data = { title: "Football Prediction", body: e.data.text() }; }
 
   e.waitUntil(
-    self.registration.showNotification(data.title || "NBR Predictions ⚽", {
+    self.registration.showNotification(data.title || "Football Prediction ⚽", {
       body: data.body || "",
       icon: "/icon-192.png",
       badge: "/icon-192.png",

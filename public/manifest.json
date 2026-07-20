@@ -1,6 +1,6 @@
 {
-  "name": "NBR World Cup Predictions",
-  "short_name": "NBR Predictions",
+  "name": "Football Prediction",
+  "short_name": "Football Prediction",
   "description": "Predict football scores and track leaderboards.",
   "start_url": "/",
   "display": "standalone",
