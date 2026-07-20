@@ -6,7 +6,7 @@ This document summarizes the architecture, database schema, pages, and API endpo
 - **Framework:** Next.js 14 (App Router)
 - **Styling:** Tailwind CSS (Dark Mode preset)
 - **Database:** SQLite (`better-sqlite3`)
-- **Auth:** Stateless JWT (`jose`), Phone-number based (no OTP/passwords)
+- **Auth:** Stateless JWT (`jose`), Username + PIN model (no passwords stored; PIN hashed)
 - **Images:** Sharp (profile picture compression & resizing)
 
 ## 🗄 SQLite Schema (`football.db`)
@@ -14,7 +14,7 @@ This document summarizes the architecture, database schema, pages, and API endpo
 ### 1. `users`
 - `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
 - `name` (TEXT)
--- `phone` (TEXT UNIQUE) - *e.g., `+0000000000`*
+- `username` (TEXT UNIQUE) - *e.g., `admin`*
 - `pfp_path` (TEXT NULL) - *e.g., `/uploads/12345.jpg`*
 - `is_admin` (INTEGER DEFAULT 0)
 
@@ -44,13 +44,13 @@ This document summarizes the architecture, database schema, pages, and API endpo
 
 ## 🖥 Pages & Layout
 
-- `/` - **Login:** Phone number input. Checks if exists in DB, issues signed JWT session cookie.
+- `/` - **Login:** Username (and PIN) input. Checks credentials and issues signed JWT session cookie.
 - `/leaderboard` - **Main Dashboard:** Ranked users by exact score count (tiebreaker: earliest last-correct prediction). Displays active/upcoming matches in 2-per-card grid layout with live countdowns.
 - `/predict/[matchId]` - **Match Prediction:** Submits/updates scores. Locks when `now > prediction_deadline`.
 - `/family` - **Family Grid:** Lists all members, profile pictures, exact scores correct, and total predictions.
 - `/history` - **Past Matches:** Completed games. Clicking on any card opens a modal showing everyone's predictions and a share-to-WhatsApp button.
 - `/admin` - **Admin Dashboard (Tabs):**
-  - **Users:** Create/Delete family members with custom name, phone, and optional photo upload (compressed via `sharp`).
+  - **Users:** Create/Delete family members with custom name, username, optional PIN, and optional photo upload (compressed via `sharp`).
   - **Matches:** Match creator using a searchable country/flag selector (32 World Cup teams preloaded).
   - **Results:** Enter scores for completed matches to trigger auto-recalculations.
   - **Import:** Bulk retroactive history importer (WhatsApp backfill tool). Set custom timestamps for tiebreaker accuracy.
