@@ -27,7 +27,7 @@ The database is located in the root directory at `./football.db`.
 CREATE TABLE users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
-  phone TEXT UNIQUE NOT NULL,
+  username TEXT UNIQUE NOT NULL,
   pfp_path TEXT,                -- Path to cropped profile picture (e.g. /uploads/...)
   is_admin INTEGER DEFAULT 0,   -- 1 = Admin, 0 = Regular user
   last_login_at TEXT            -- UTC datetime string of last login
