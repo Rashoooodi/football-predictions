@@ -26,8 +26,7 @@ As an admin, you are responsible for managing the league, adding matches, and en
 
 ### Admin Access
 Log in with the designated admin account. By default, this is:
-* **Username**: `admin`
-* **Phone**: `+0000000000`
+- **Username**: `admin`
 
 Once logged in, you will have access to the `/admin` dashboard.
 
