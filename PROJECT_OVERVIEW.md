@@ -9,7 +9,7 @@ This document provides a comprehensive overview of the NBR Predictions applicati
 Welcome to the family prediction league! Here is everything you need to know about how to play and compete.
 
 ### How to Play
-1. **Login**: You don't need a password! Just log in using the username or phone number provided by the administrator.
+1. **Login**: You don't need a password! Log in using the username provided by the administrator. Some users may be prompted to set a short PIN on first login.
 2. **Predict Matches**: Go to the active matches and submit your predicted final score (e.g., Brazil 2 - 1 Argentina).
 3. **Check the Leaderboard**: Once a match finishes, points are awarded, and the leaderboard updates automatically.
 
@@ -31,7 +31,7 @@ Log in with the designated admin account. By default, this is:
 Once logged in, you will have access to the `/admin` dashboard.
 
 ### Admin Duties
-* **Managing Users**: Go to Admin -> Users (or Manage Predictors) to add new family members. You will need to provide their name, username/phone number, and you can optionally upload and crop a profile photo for them.
+* **Managing Users**: Go to Admin -> Users (or Manage Predictors) to add new family members. Provide their name and username; optionally set an initial PIN or leave blank so the user sets it on first login. You can also upload and crop a profile photo for them.
 * **Creating Matches**: Go to Admin -> Matches. Select the two competing countries, and set the kickoff time and prediction deadline.
 * **Entering Results**: Once a real-life match ends, go to Admin -> Results. Enter the final score. The system will automatically calculate points and update the leaderboard.
 * **Importing History**: If you have past predictions stored in WhatsApp chats, you can use the "Import" tool to log those historical predictions into the system for a specific match.
