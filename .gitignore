@@ -1,12 +1,55 @@
+# Node modules
 node_modules/
-football.db
-football.db-shm
-football.db-wal
-.env*.local
-.DS_Store
-next-env.d.ts
+
+# Next.js build output
 .next/
-/uploads/*
-!/uploads/.gitkeep
+.next/**
+
+# Production build output
+/out/
+/dist/
+
+# TypeScript incremental build info
+tsconfig.tsbuildinfo
+
+# Local env / secret files
+.env.local
+.env.*.local
+.env
+
+# Database files / SQLite
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+
+# Uploaded user content: ignore everything but keep the .gitkeep placeholder
+public/uploads/*
+!public/uploads/.gitkeep
+
+# OS files
+.DS_Store
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor folders
+.vscode/
+.idea/
+
+# Tooling / cache
+.cache/
+.next/cache/
+**/.cache/
+
+# Aider / helper files
 .aider*
+
+# Project docs or misc tracked files
 issues.md
+
+# Keep this file tidy: add project-specific exceptions below
