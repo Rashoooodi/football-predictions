@@ -1,12 +1,12 @@
-# NBR Predictions — AI Agent Installation Guide
+# Football Prediction — AI Agent Installation Guide
 
-> This document is written for an AI agent (e.g. Antigravity, Claude, GPT-4o) to follow step-by-step to install and run the NBR Predictions app on a new system.
+> This document is written for an AI agent (e.g. Antigravity, Claude, GPT-4o) to follow step-by-step to install and run the Football Prediction app on a new system.
 
 ---
 
 ## 📦 What This App Is
 
-**NBR Predictions** is a family/group football score prediction web app built with:
+**Football Prediction** is a family/group football score prediction web app built with:
 - **Framework**: Next.js 14 (App Router)
 - **Database**: SQLite via `better-sqlite3` (file-based, no external DB server needed)
 - **Auth**: Username-only login (trust-based, no passwords), JWT sessions via `jose`
@@ -104,7 +104,7 @@ Open a browser and navigate to:
 http://localhost:3000
 ```
 
-You should see the NBR Predictions login page. Log in with:
+You should see the Football Prediction login page. Log in with:
 - **Username**: `admin`
 
 ---
