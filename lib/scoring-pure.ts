@@ -37,11 +37,17 @@ export function compareLeaderboardRows(
   return 0;
 }
 
+export function rewardMultiplier(withReward: number | boolean | null | undefined): number {
+  return withReward ? 2 : 1;
+}
+
 export function pointsForRank(
   rank: number,
   firstPts: number,
-  otherPts: number
+  otherPts: number,
+  withReward: number | boolean | null | undefined = 0
 ): number {
   if (rank < 1) return 0;
-  return rank === 1 ? firstPts : otherPts;
+  const base = rank === 1 ? firstPts : otherPts;
+  return base * rewardMultiplier(withReward);
 }
