@@ -1,0 +1,17 @@
+services:
+  football-predictions:
+    build: .
+    container_name: football-predictions
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.local
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+    volumes:
+      - fp-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  fp-data:
