@@ -55,6 +55,9 @@ export function initDb() {
       value TEXT
     );
     INSERT OR IGNORE INTO settings (key, value) VALUES ('announcement', '');
+    INSERT OR IGNORE INTO settings (key, value) VALUES ('first_correct_points', '2');
+    INSERT OR IGNORE INTO settings (key, value) VALUES ('other_correct_points', '1');
+    INSERT OR IGNORE INTO settings (key, value) VALUES ('ban_message', 'Access denied');
 
     CREATE TABLE IF NOT EXISTS push_subscriptions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -69,6 +72,21 @@ export function initDb() {
       reason TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS audit_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      action TEXT NOT NULL,
+      ip_address TEXT,
+      details TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON audit_logs(created_at);
+    CREATE INDEX IF NOT EXISTS idx_audit_logs_user ON audit_logs(user_id);
+    CREATE INDEX IF NOT EXISTS idx_matches_api_id ON matches(api_id);
+    CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
   `);
 
   const admin = db
