@@ -1,11 +1,16 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import db from "./db";
+import { isStillLocked } from "./timezone";
+import { SESSION_MAX_AGE_SECONDS } from "./constants";
 
-if (!process.env.JWT_SECRET) {
-  throw new Error("FATAL: JWT_SECRET environment variable is missing.");
+function jwtSecret(): Uint8Array {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("FATAL: JWT_SECRET environment variable is missing.");
+  }
+  return new TextEncoder().encode(secret);
 }
-const SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 
 export type Session = {
   userId: number;
@@ -22,13 +27,13 @@ export async function createSession(userId: number): Promise<void> {
   const token = await new SignJWT({ userId, isAdmin: !!user.is_admin })
     .setProtectedHeader({ alg: "HS256" })
     .setExpirationTime("30d")
-    .sign(SECRET);
+    .sign(jwtSecret());
 
   cookies().set("session", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
-    maxAge: 60 * 60 * 24 * 30,
+    maxAge: SESSION_MAX_AGE_SECONDS,
     path: "/",
   });
 }
@@ -38,12 +43,19 @@ export async function getSession(): Promise<Session | null> {
   if (!token) return null;
 
   try {
-    const { payload } = await jwtVerify(token, SECRET);
-    const userId = payload.userId as number;
-    
-    // SECURITY PATCH: Enforce ban instantly even for active sessions across ALL APIs
-    const user = db.prepare("SELECT is_banned, locked_until FROM users WHERE id = ?").get(userId) as { is_banned: number, locked_until: string | null } | undefined;
-    
+    const { payload } = await jwtVerify(token, jwtSecret());
+    const userId = payload.userId;
+    if (typeof userId !== "number" || !Number.isInteger(userId) || userId <= 0) {
+      logout();
+      return null;
+    }
+
+    const user = db
+      .prepare("SELECT is_admin, is_banned, locked_until FROM users WHERE id = ?")
+      .get(userId) as
+      | { is_admin: number; is_banned: number; locked_until: string | null }
+      | undefined;
+
     if (!user) {
       logout();
       return null;
@@ -52,14 +64,14 @@ export async function getSession(): Promise<Session | null> {
       logout();
       return null;
     }
-    if (user.locked_until && new Date(user.locked_until + "Z") > new Date()) {
+    if (isStillLocked(user.locked_until)) {
       logout();
       return null;
     }
 
     return {
       userId,
-      isAdmin: payload.isAdmin as boolean,
+      isAdmin: user.is_admin === 1,
     };
   } catch {
     return null;
