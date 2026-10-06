@@ -41,6 +41,10 @@ pnpm-debug.log*
 .vscode/
 .idea/
 
+# Tests / coverage
+coverage/
+*.lcov
+
 # Tooling / cache
 .cache/
 .next/cache/
