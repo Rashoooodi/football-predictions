@@ -14,6 +14,9 @@ export async function GET(
 
   const match = db.prepare("SELECT * FROM matches WHERE id = ?").get(params.id) as any;
   if (!match) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (match.is_hidden === 1 && !isAdmin) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
 
   const predictions = db
     .prepare(
@@ -54,12 +57,14 @@ export async function GET(
     return { ...p, is_masked: false };
   });
 
-  const takenScores = filteredPredictions
-    .filter((p: any) => p.user_id !== userId)
-    .map((p: any) => ({
-      team1_score: p.team1_score,
-      team2_score: p.team2_score,
-    }));
+  const takenScores = deadlinePassed || isAdmin
+    ? filteredPredictions
+        .filter((p: any) => p.user_id !== userId)
+        .map((p: any) => ({
+          team1_score: p.team1_score,
+          team2_score: p.team2_score,
+        }))
+    : [];
 
 
 
