@@ -70,13 +70,14 @@ export default function NavigationBar() {
   }
 
   return (
-    <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[92%] max-w-md bg-[#0d0e15]/75 backdrop-blur-xl border border-white/[0.08] rounded-2xl p-2 flex justify-around items-center shadow-[0_20px_50px_rgba(0,0,0,0.6)] z-40 transition-all duration-300">
+    <nav aria-label="Main" className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[92%] max-w-md bg-[#0d0e15]/75 backdrop-blur-xl border border-white/[0.08] rounded-2xl p-2 flex justify-around items-center shadow-[0_20px_50px_rgba(0,0,0,0.6)] z-40 transition-all duration-300">
       {tabs.map((tab) => {
         const isActive = pathname === tab.href || (tab.href !== "/leaderboard" && pathname.startsWith(tab.href));
         return (
           <Link
             key={tab.href}
             href={tab.href}
+            aria-current={isActive ? "page" : undefined}
             className={`flex flex-col items-center gap-1 py-2 px-4 rounded-xl transition-all duration-300 ${
               isActive
                 ? "text-red-400 bg-red-500/10 scale-105 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]"
