@@ -5,7 +5,6 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "prestart": "fuser -k 5000/tcp 2>/dev/null || true",
     "start": "next start",
     "init-db": "tsx lib/init-db.ts",
     "test": "vitest run",
