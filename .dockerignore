@@ -1,0 +1,16 @@
+node_modules
+.next
+.git
+*.db
+*.db-shm
+*.db-wal
+.env
+.env.local
+.env.*.local
+coverage
+tests
+docs
+*.md
+!README.md
+public/uploads/*
+!public/uploads/.gitkeep
