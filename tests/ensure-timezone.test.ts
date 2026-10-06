@@ -8,10 +8,13 @@ describe("ensureTimezone", () => {
     expect(ensureTimezone("")).toBeNull();
   });
 
-  it("keeps explicit offsets", () => {
+  it("keeps explicit offsets including negatives", () => {
     expect(ensureTimezone("2026-01-01T12:00:00Z")).toBe("2026-01-01T12:00:00Z");
     expect(ensureTimezone("2026-01-01T12:00:00+03:00")).toBe(
       "2026-01-01T12:00:00+03:00"
+    );
+    expect(ensureTimezone("2026-01-01T12:00:00-04:00")).toBe(
+      "2026-01-01T12:00:00-04:00"
     );
   });
 
