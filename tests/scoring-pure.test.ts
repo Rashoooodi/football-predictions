@@ -73,4 +73,9 @@ describe("pointsForRank", () => {
     expect(pointsForRank(2, 2, 1)).toBe(1);
     expect(pointsForRank(0, 2, 1)).toBe(0);
   });
+
+  it("doubles points on reward matches", () => {
+    expect(pointsForRank(1, 2, 1, 1)).toBe(4);
+    expect(pointsForRank(2, 2, 1, 1)).toBe(2);
+  });
 });
