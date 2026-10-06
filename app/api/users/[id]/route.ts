@@ -18,8 +18,16 @@ export async function POST(
   const username = (formData.get("username") as string)?.trim().toLowerCase();
   const pfp = formData.get("pfp") as File | null;
   const deletePfp = formData.get("deletePfp") === "true";
-  const isAdmin = formData.get("is_admin") === "true" ? 1 : 0;
-  const isHidden = formData.get("is_hidden") === "true" ? 1 : 0;
+  const isAdmin = formData.has("is_admin")
+    ? formData.get("is_admin") === "true"
+      ? 1
+      : 0
+    : null;
+  const isHidden = formData.has("is_hidden")
+    ? formData.get("is_hidden") === "true"
+      ? 1
+      : 0
+    : null;
 
   if (!name || !username) {
     return NextResponse.json({ error: "Name and username required" }, { status: 400 });
@@ -62,14 +70,9 @@ export async function POST(
   }
 
   try {
-    db.prepare("UPDATE users SET name = ?, username = ?, pfp_path = ?, is_admin = ?, is_hidden = ? WHERE id = ?").run(
-      name,
-      username,
-      pfpPath,
-      isAdmin,
-      isHidden,
-      params.id
-    );
+    db.prepare(
+      "UPDATE users SET name = ?, username = ?, pfp_path = ?, is_admin = COALESCE(?, is_admin), is_hidden = COALESCE(?, is_hidden) WHERE id = ?"
+    ).run(name, username, pfpPath, isAdmin, isHidden, params.id);
     return NextResponse.json({ success: true });
   } catch (error: any) {
     if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
@@ -87,6 +90,19 @@ export async function DELETE(
     await requireAdmin();
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const target = db.prepare("SELECT id, is_admin FROM users WHERE id = ?").get(params.id) as
+    | { id: number; is_admin: number }
+    | undefined;
+  if (!target) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+  if (target.is_admin === 1) {
+    const adminCount = db.prepare("SELECT COUNT(*) as n FROM users WHERE is_admin = 1").get() as { n: number };
+    if (adminCount.n <= 1) {
+      return NextResponse.json({ error: "Cannot delete the last admin" }, { status: 409 });
+    }
   }
 
   try {
