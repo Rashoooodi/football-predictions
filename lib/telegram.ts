@@ -1,4 +1,5 @@
 import db from "@/lib/db";
+import { escapeHtml } from "@/lib/html";
 
 export async function sendTelegramAlert(message: string, type?: "signup" | "banned" | "bruteforce" | "honeypot") {
   let botToken = process.env.TELEGRAM_BOT_TOKEN;
@@ -35,13 +36,14 @@ export async function sendTelegramAlert(message: string, type?: "signup" | "bann
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         chat_id: chatId,
-        text: message,
+        text: escapeHtml(message),
         parse_mode: "HTML",
       }),
+      signal: AbortSignal.timeout(5000),
     });
-    
-    const resText = await res.text();
-    console.log("Telegram API Response:", res.status, resText);
+    if (!res.ok) {
+      console.error("Telegram API failed:", res.status);
+    }
   } catch (err) {
     console.error("Failed to send telegram alert:", err);
   }
