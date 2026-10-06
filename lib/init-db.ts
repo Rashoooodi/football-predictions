@@ -100,4 +100,7 @@ export function initDb() {
   }
 }
 
-initDb();
+const isDirectRun = process.argv[1]?.replace(/\\/g, "/").endsWith("lib/init-db.ts");
+if (isDirectRun) {
+  initDb();
+}
