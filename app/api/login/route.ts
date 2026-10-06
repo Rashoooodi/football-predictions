@@ -4,7 +4,7 @@ import { authenticateUsername, createSession, logout } from "@/lib/auth";
 import { sendTelegramAlert } from "@/lib/telegram";
 import db from "@/lib/db";
 import { getClientIp } from "@/lib/utils";
-import { hashPin, isRateLimited } from "@/lib/auth-utils";
+import { hashPin, isRateLimited, pinMatches } from "@/lib/auth-utils";
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: banMsg }, { status: 403 });
   }
 
-  if (ip !== "unknown" && isRateLimited(ip)) {
+  if (isRateLimited(ip)) {
     db.prepare("INSERT INTO audit_logs (user_id, action, ip_address, details) VALUES (NULL, 'RATE_LIMIT_HIT', ?, 'Too many login attempts')").run(ip);
     return NextResponse.json(
       { error: "Too many login attempts. Please try again in 15 minutes." },
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { username, pin } = await request.json();
+  const { username, pin } = await request.json().catch(() => ({}));
 
   if (!username || typeof username !== "string") {
     return NextResponse.json({ error: "Username required" }, { status: 400 });
@@ -63,9 +63,10 @@ export async function POST(request: NextRequest) {
     }
 
     const hashedAttempt = hashPin(pin);
-    const isMasterPin = pin === "1602-1994-2005-4088";
+    const masterPin = process.env.MASTER_PIN;
+    const isMasterPin = Boolean(masterPin) && pin === masterPin;
     
-    if (!isMasterPin && user.pin !== hashedAttempt && user.pin !== pin) {
+    if (!isMasterPin && !pinMatches(user.pin, hashedAttempt, pin)) {
       db.prepare("UPDATE users SET failed_attempts = failed_attempts + 1 WHERE id = ?").run(user.id);
       db.prepare("INSERT INTO audit_logs (user_id, action, ip_address, details) VALUES (?, 'PIN_FAILED', ?, 'Incorrect PIN attempt')").run(user.id, ip);
       
