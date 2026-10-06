@@ -1,15 +1,21 @@
-const CACHE_NAME = "football-prediction-v1";
+const CACHE_NAME = "football-prediction-v2";
 
 self.addEventListener("install", (e) => {
   self.skipWaiting();
 });
 
 self.addEventListener("activate", (e) => {
-  e.waitUntil(clients.claim());
+  e.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+    ).then(() => clients.claim())
+  );
 });
 
 self.addEventListener("fetch", (event) => {
-  event.respondWith(fetch(event.request).catch(() => new Response("Offline")));
+  event.respondWith(
+    fetch(event.request).catch(() => caches.match("/fallback.html").then((r) => r || new Response("Offline")))
+  );
 });
 
 /* ── Push Notifications ── */
