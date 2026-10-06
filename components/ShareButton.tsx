@@ -60,7 +60,7 @@ export default function ShareButton({ matchId }: { matchId: number }) {
   }
 
   return (
-    <button onClick={handleShare} className="btn-primary w-full">
+    <button type="button" onClick={handleShare} aria-label="Share match result to WhatsApp" className="btn-primary w-full">
       Share to WhatsApp
     </button>
   );
