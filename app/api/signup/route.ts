@@ -4,12 +4,8 @@ import { createSession } from "@/lib/auth";
 import { sendTelegramAlert } from "@/lib/telegram";
 import db from "@/lib/db";
 import { getClientIp } from "@/lib/utils";
-import crypto from "crypto";
-
-function hashPin(pin: string) {
-  const pepper = process.env.JWT_SECRET || "nbr-secure-pepper";
-  return crypto.createHash("sha256").update(pin + pepper).digest("hex");
-}
+import { hashPin } from "@/lib/auth-utils";
+import { isValidDisplayName, isValidPin, normalizeUsername } from "@/lib/validation";
 
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
@@ -22,28 +18,24 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Name, username, and PIN are required" }, { status: 400 });
   }
 
-  if (pin.length < 4) {
-    return NextResponse.json({ error: "PIN must be at least 4 digits" }, { status: 400 });
+  if (!isValidPin(pin)) {
+    return NextResponse.json({ error: "PIN must be between 4 and 32 characters" }, { status: 400 });
   }
 
-  // Validate username
-  if (!/^[a-z0-9._]+$/.test(username)) {
+  const normalized = normalizeUsername(username);
+  if (!normalized) {
     return NextResponse.json(
-      { error: "Username can only contain lowercase letters, numbers, dots, and underscores" },
+      { error: "Username must be 3-32 characters: lowercase letters, numbers, dots, and underscores" },
       { status: 400 }
     );
   }
 
-  if (username.length < 3) {
-    return NextResponse.json({ error: "Username must be at least 3 characters" }, { status: 400 });
-  }
-
-  if (name.length < 2) {
-    return NextResponse.json({ error: "Name must be at least 2 characters" }, { status: 400 });
+  if (!isValidDisplayName(name)) {
+    return NextResponse.json({ error: "Name must be between 2 and 80 characters" }, { status: 400 });
   }
 
   // Check if username already exists
-  const existing = db.prepare("SELECT id FROM users WHERE username = ?").get(username);
+  const existing = db.prepare("SELECT id FROM users WHERE username = ?").get(normalized);
   if (existing) {
     return NextResponse.json({ error: "Username already taken. Try another one." }, { status: 409 });
   }
@@ -69,7 +61,7 @@ export async function POST(request: NextRequest) {
   try {
     const result = db
       .prepare("INSERT INTO users (name, username, pin, pfp_path, is_admin) VALUES (?, ?, ?, ?, 0)")
-      .run(name, username, hashPin(pin), pfpPath);
+      .run(name, normalized, hashPin(pin), pfpPath);
 
     const userId = result.lastInsertRowid as number;
 
