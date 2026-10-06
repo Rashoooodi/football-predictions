@@ -22,7 +22,7 @@ export async function sendTelegramAlert(message: string, type?: "signup" | "bann
     console.error("Telegram DB error:", e);
   }
 
-  console.log("Telegram configured with botToken:", !!botToken, "chatId:", !!chatId);
+  console.log("Telegram configured:", Boolean(botToken && chatId));
 
   if (!botToken || !chatId) {
     return; // Silently ignore if not configured
