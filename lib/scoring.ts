@@ -1,4 +1,5 @@
 import db from "./db";
+import { compareLeaderboardRows, parsePointsSetting } from "./scoring-pure";
 
 export type LeaderboardEntry = {
   user_id: number;
@@ -50,8 +51,8 @@ export function calculateLeaderboard(includeHidden = false): LeaderboardEntry[] 
 
   const firstPtsSetting = db.prepare("SELECT value FROM settings WHERE key = 'first_correct_points'").get() as SettingRow | undefined;
   const otherPtsSetting = db.prepare("SELECT value FROM settings WHERE key = 'other_correct_points'").get() as SettingRow | undefined;
-  const firstPts = firstPtsSetting ? parseInt(firstPtsSetting.value) : 2;
-  const otherPts = otherPtsSetting ? parseInt(otherPtsSetting.value) : 1;
+  const firstPts = parsePointsSetting(firstPtsSetting?.value, 2);
+  const otherPts = parsePointsSetting(otherPtsSetting?.value, 1);
 
   // 1. Get correct count and points for active users using Window Functions
   const users = db
@@ -127,15 +128,7 @@ export function calculateLeaderboard(includeHidden = false): LeaderboardEntry[] 
     };
   });
 
-  completeList.sort((a, b) => {
-    if (b.points !== a.points) return b.points - a.points;
-    if (a.earliest_correct && b.earliest_correct) {
-      return a.earliest_correct.localeCompare(b.earliest_correct);
-    }
-    if (a.earliest_correct) return 1;
-    if (b.earliest_correct) return -1;
-    return 0;
-  });
+  completeList.sort(compareLeaderboardRows);
 
   const finalFiltered = completeList.filter(u => includeHidden ? true : !u.is_hidden);
 
@@ -155,6 +148,11 @@ export function calculateLeaderboard(includeHidden = false): LeaderboardEntry[] 
   }
 
   return result;
+}
+
+export function invalidateLeaderboardCache(): void {
+  cachedLeaderboard = null;
+  lastCacheTime = 0;
 }
 
 export function getMatchResults(matchId: number) {
