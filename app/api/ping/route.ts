@@ -3,6 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
 import { getClientIp } from "@/lib/utils";
 
+export async function GET() {
+  return NextResponse.json({ ok: true });
+}
+
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
   
