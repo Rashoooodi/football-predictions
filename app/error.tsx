@@ -21,7 +21,7 @@ export default function Error({
           <span className="text-6xl filter drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]">⚠️</span>
           <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping" />
         </div>
-        <div>
+        <div role="alert">
           <h1 className="text-3xl font-black text-white font-outfit mb-2">Oops! Something broke.</h1>
           <p className="text-sm text-gray-400 leading-relaxed">
             We hit an unexpected error while trying to load this page. Our servers might be a little overwhelmed, or a gremlin got into the code.

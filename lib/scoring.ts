@@ -1,4 +1,5 @@
 import db from "./db";
+import { compareLeaderboardRows, parsePointsSetting } from "./scoring-pure";
 
 export type LeaderboardEntry = {
   user_id: number;
@@ -50,24 +51,24 @@ export function calculateLeaderboard(includeHidden = false): LeaderboardEntry[] 
 
   const firstPtsSetting = db.prepare("SELECT value FROM settings WHERE key = 'first_correct_points'").get() as SettingRow | undefined;
   const otherPtsSetting = db.prepare("SELECT value FROM settings WHERE key = 'other_correct_points'").get() as SettingRow | undefined;
-  const firstPts = firstPtsSetting ? parseInt(firstPtsSetting.value) : 2;
-  const otherPts = otherPtsSetting ? parseInt(otherPtsSetting.value) : 1;
+  const firstPts = parsePointsSetting(firstPtsSetting?.value, 2);
+  const otherPts = parsePointsSetting(otherPtsSetting?.value, 1);
 
   // 1. Get correct count and points for active users using Window Functions
   const users = db
     .prepare(
       `WITH CorrectPreds AS (
-         SELECT p.user_id, p.match_id, p.submitted_at,
+         SELECT p.user_id, p.match_id, p.submitted_at, m.with_reward,
                 ROW_NUMBER() OVER(PARTITION BY p.match_id ORDER BY p.submitted_at ASC) as rnk
          FROM predictions p
          JOIN matches m ON p.match_id = m.id
-         WHERE (m.is_finished = 1 OR (m.is_finished = 0 AND m.team1_score IS NOT NULL AND m.team2_score IS NOT NULL))
+         WHERE m.is_finished = 1
            AND p.team1_score = m.team1_score
            AND p.team2_score = m.team2_score
        )
        SELECT u.id as user_id, u.name, u.username, u.pfp_path, u.is_hidden,
               COUNT(cp.match_id) as correct_count,
-              IFNULL(SUM(CASE WHEN cp.match_id IS NULL THEN 0 WHEN cp.rnk = 1 THEN ? ELSE ? END), 0) as points
+              IFNULL(SUM(CASE WHEN cp.match_id IS NULL THEN 0 WHEN cp.rnk = 1 THEN ? ELSE ? END * CASE WHEN cp.with_reward = 1 THEN 2 ELSE 1 END), 0) as points
        FROM users u
        LEFT JOIN CorrectPreds cp ON cp.user_id = u.id
        GROUP BY u.id`
@@ -88,7 +89,7 @@ export function calculateLeaderboard(includeHidden = false): LeaderboardEntry[] 
       "SELECT p.user_id, MIN(p.submitted_at) as earliest " +
         "FROM predictions p " +
         "JOIN matches m ON p.match_id = m.id " +
-        "WHERE (m.is_finished = 1 OR (m.is_finished = 0 AND m.team1_score IS NOT NULL AND m.team2_score IS NOT NULL)) " +
+        "WHERE m.is_finished = 1 " +
         "AND p.team1_score = m.team1_score " +
         "AND p.team2_score = m.team2_score " +
         "GROUP BY p.user_id"
@@ -127,15 +128,7 @@ export function calculateLeaderboard(includeHidden = false): LeaderboardEntry[] 
     };
   });
 
-  completeList.sort((a, b) => {
-    if (b.points !== a.points) return b.points - a.points;
-    if (a.earliest_correct && b.earliest_correct) {
-      return a.earliest_correct.localeCompare(b.earliest_correct);
-    }
-    if (a.earliest_correct) return 1;
-    if (b.earliest_correct) return -1;
-    return 0;
-  });
+  completeList.sort(compareLeaderboardRows);
 
   const finalFiltered = completeList.filter(u => includeHidden ? true : !u.is_hidden);
 
@@ -155,6 +148,11 @@ export function calculateLeaderboard(includeHidden = false): LeaderboardEntry[] 
   }
 
   return result;
+}
+
+export function invalidateLeaderboardCache(): void {
+  cachedLeaderboard = null;
+  lastCacheTime = 0;
 }
 
 export function getMatchResults(matchId: number) {

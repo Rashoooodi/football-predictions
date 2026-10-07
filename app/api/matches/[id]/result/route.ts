@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import db from "@/lib/db";
 import { getClientIp } from "@/lib/utils";
+import { isValidScore } from "@/lib/validation";
+import { invalidateLeaderboardCache } from "@/lib/scoring";
 
 export async function POST(
   request: NextRequest,
@@ -20,21 +22,20 @@ export async function POST(
   const team2Score = body.team2Score;
   const isLive = body.isLive === true;
 
-  if (
-    typeof team1Score !== "number" ||
-    typeof team2Score !== "number" ||
-    !Number.isInteger(team1Score) ||
-    !Number.isInteger(team2Score) ||
-    team1Score < 0 ||
-    team2Score < 0
-  ) {
-    return NextResponse.json({ error: "Invalid scores: must be non-negative integers" }, { status: 400 });
+  if (!isValidScore(team1Score) || !isValidScore(team2Score)) {
+    return NextResponse.json({ error: "Invalid scores: must be integers between 0 and 99" }, { status: 400 });
+  }
+
+  const match = db.prepare("SELECT id FROM matches WHERE id = ?").get(params.id);
+  if (!match) {
+    return NextResponse.json({ error: "Match not found" }, { status: 404 });
   }
 
   try {
     db.prepare(
       "UPDATE matches SET team1_score = ?, team2_score = ?, is_finished = ? WHERE id = ?"
     ).run(team1Score, team2Score, isLive ? 0 : 1, params.id);
+    invalidateLeaderboardCache();
 
     const ip = getClientIp(request);
     db.prepare("INSERT INTO audit_logs (user_id, action, ip_address, details) VALUES (?, ?, ?, ?)").run(

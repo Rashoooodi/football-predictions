@@ -46,7 +46,8 @@ Security and secrets
 
 Testing
 
-- Add unit and/or integration tests where possible. If your change affects critical logic (auth, payments, scoring), prioritize tests to cover that logic.
+- Add unit tests under `tests/` for scoring, auth, and validation changes.
+- Run `npm test` and `npm run typecheck` before opening a PR.
 
 Questions
 

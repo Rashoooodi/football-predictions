@@ -1,14 +1,15 @@
 export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
-
-// Use a secret token to prevent random people from hitting the cron endpoint
-const CRON_SECRET = process.env.CRON_SECRET || "default_cron_secret";
+import { bearerMatches } from "@/lib/timing-safe";
 
 export async function GET(request: Request) {
-  // Check authorization header
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    return NextResponse.json({ error: "Cron is not configured" }, { status: 503 });
+  }
   const authHeader = request.headers.get("Authorization");
-  if (authHeader !== `Bearer ${CRON_SECRET}`) {
+  if (!bearerMatches(authHeader, cronSecret)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

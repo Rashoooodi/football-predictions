@@ -39,6 +39,8 @@ export default function CountrySelector({
       <button
         type="button"
         onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        aria-haspopup="listbox"
         className="input text-left flex items-center gap-2"
       >
         {value ? (
@@ -55,8 +57,12 @@ export default function CountrySelector({
           <input
             autoFocus
             placeholder="Search..."
+            aria-label={`Search ${label}`}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") setOpen(false);
+            }}
             className="input border-0 rounded-none border-b border-border"
           />
           {filtered.map((c) => (

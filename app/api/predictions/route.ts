@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import db from "@/lib/db";
 import { getClientIp } from "@/lib/utils";
+import { isValidScore, parseMatchId } from "@/lib/validation";
 
 export async function POST(request: NextRequest) {
   const session = await getSession();
@@ -11,9 +12,13 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const matchId = body.matchId;
+  const matchId = parseMatchId(body.matchId);
   const team1Score = body.team1Score;
   const team2Score = body.team2Score;
+
+  if (!matchId) {
+    return NextResponse.json({ error: "Invalid match id" }, { status: 400 });
+  }
 
   const match = db.prepare("SELECT * FROM matches WHERE id = ?").get(matchId) as any;
   if (!match) {
@@ -32,15 +37,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Prediction window not yet open" }, { status: 403 });
   }
 
-  if (
-    typeof team1Score !== "number" ||
-    typeof team2Score !== "number" ||
-    !Number.isInteger(team1Score) ||
-    !Number.isInteger(team2Score) ||
-    team1Score < 0 ||
-    team2Score < 0
-  ) {
-    return NextResponse.json({ error: "Scores must be valid non-negative integers" }, { status: 400 });
+  if (!isValidScore(team1Score) || !isValidScore(team2Score)) {
+    return NextResponse.json({ error: "Scores must be integers between 0 and 99" }, { status: 400 });
   }
 
   const ip = getClientIp(request);

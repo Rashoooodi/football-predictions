@@ -30,8 +30,9 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   width: "device-width",
-  initialScale: 0.85,
+  initialScale: 1,
   viewportFit: "cover",
+  themeColor: "#10b981",
 };
 
 export default function RootLayout({
@@ -47,11 +48,14 @@ export default function RootLayout({
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-500/10 blur-[120px] pointer-events-none -z-10" />
         <div className="absolute top-[30%] right-[-20%] w-[40%] h-[40%] rounded-full bg-orange-500/5 blur-[100px] pointer-events-none -z-10" />
 
-        <main className="pb-32 min-h-[100dvh] flex flex-col">
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 bg-white text-black px-3 py-2 rounded">
+          Skip to content
+        </a>
+        <main id="main-content" className="pb-32 min-h-[100dvh] flex flex-col">
           <div className="flex-grow">{children}</div>
           <footer className="py-8 text-center text-[10px] text-gray-400 font-medium">
             <p>&copy; {new Date().getFullYear()} Football Prediction</p>
-            <p className="mt-1">Support: <a href="mailto:support@example.com" className="hover:text-white transition-colors">support@example.com</a></p>
+            <p className="mt-1">Support: <a href="mailto:support@rashid.works" className="hover:text-white transition-colors">support@rashid.works</a></p>
           </footer>
         </main>
         <NavigationBar />

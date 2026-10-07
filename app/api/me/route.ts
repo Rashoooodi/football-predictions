@@ -2,7 +2,6 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import db from "@/lib/db";
-import { getClientIp } from "@/lib/utils";
 import path from "path";
 
 export async function GET(request: NextRequest) {
@@ -11,20 +10,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Not logged in" }, { status: 401 });
   }
   try {
-    const ip = getClientIp(request);
-    
     const user = db
       .prepare("SELECT id, name, username, pfp_path, is_admin FROM users WHERE id = ?")
       .get(session.userId) as any;
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
-
-    // Log the app open event
-    db.prepare(`
-      INSERT INTO audit_logs (user_id, action, details, ip_address) 
-      VALUES (?, ?, ?, ?)
-    `).run(user.id, "Opened App", `${user.username} opened the app while already logged in.`, ip);
 
     return NextResponse.json(user);
   } catch (error) {

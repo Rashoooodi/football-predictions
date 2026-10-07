@@ -2,14 +2,18 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs/promises";
-import path from "path";
+import { resolveUploadPath } from "@/lib/uploads";
 
-export async function GET(request: NextRequest, { params }: { params: { path: string[] } }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { path: string[] } }
+) {
   try {
-    const filename = params.path.join("/");
-    const filePath = path.join(process.cwd(), "public", "uploads", filename);
-    
-    // Check if the file exists
+    const filePath = resolveUploadPath(params.path || []);
+    if (!filePath) {
+      return new NextResponse("Not Found", { status: 404 });
+    }
+
     try {
       await fs.access(filePath);
     } catch {
@@ -17,14 +21,13 @@ export async function GET(request: NextRequest, { params }: { params: { path: st
     }
 
     const fileBuffer = await fs.readFile(filePath);
-    
-    // Determine content type
+    const filename = filePath.toLowerCase();
+
     let contentType = "application/octet-stream";
     if (filename.endsWith(".jpg") || filename.endsWith(".jpeg")) contentType = "image/jpeg";
     else if (filename.endsWith(".png")) contentType = "image/png";
     else if (filename.endsWith(".gif")) contentType = "image/gif";
     else if (filename.endsWith(".webp")) contentType = "image/webp";
-    else if (filename.endsWith(".svg")) contentType = "image/svg+xml";
 
     return new NextResponse(fileBuffer, {
       headers: {
@@ -32,7 +35,7 @@ export async function GET(request: NextRequest, { params }: { params: { path: st
         "Cache-Control": "public, max-age=31536000, immutable",
       },
     });
-  } catch (error) {
+  } catch {
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }

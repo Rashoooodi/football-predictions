@@ -7,5 +7,12 @@ export function getAllCountries(): Country[] {
 }
 
 export function getCountryByName(name: string): Country | undefined {
-  return countries.find((c) => c.name === name);
+  const needle = name.trim().toLowerCase();
+  return countries.find((c) => c.name.toLowerCase() === needle);
+}
+
+export function searchCountries(query: string): Country[] {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return countries;
+  return countries.filter((c) => c.name.toLowerCase().includes(needle));
 }

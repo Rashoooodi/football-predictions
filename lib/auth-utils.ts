@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { timingSafeEqualString } from "./timing-safe";
 
 export function hashPin(pin: string): string {
   const pepper = process.env.JWT_SECRET;
@@ -10,8 +11,6 @@ export function hashPin(pin: string): string {
 const rateLimitMap = new Map<string, { count: number; lastReset: number }>();
 
 export function isRateLimited(ip: string): boolean {
-  if (ip === "unknown") return false;
-
   const now = Date.now();
   const windowMs = 15 * 60 * 1000; // 15 minutes
   const maxRequests = 15; // 15 attempts per 15 minutes
@@ -27,4 +26,12 @@ export function isRateLimited(ip: string): boolean {
   rateLimitMap.set(ip, record);
 
   return record.count > maxRequests;
+}
+
+export function pinMatches(stored: string, attemptHash: string, plaintext: string): boolean {
+  if (timingSafeEqualString(stored, attemptHash)) return true;
+  if (stored.length === plaintext.length && timingSafeEqualString(stored, plaintext)) {
+    return true;
+  }
+  return false;
 }
